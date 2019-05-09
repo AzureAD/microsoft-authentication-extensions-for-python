@@ -22,5 +22,4 @@ setup(
             'pytest',
         ]
     }
-
 )

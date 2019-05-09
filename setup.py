@@ -7,12 +7,7 @@ __version__ = "0.0.1"
 setup(
     name='msal-extensions',
     version=__version__,
-    package_dir={
-        '': 'src',
-    },
-    packages=find_packages(
-        where="./src",
-    ),
+    packages=find_packages(),
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
     ],

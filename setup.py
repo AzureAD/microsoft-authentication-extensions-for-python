@@ -11,15 +11,9 @@ __version__ = re.search(
 setup(
     name='msal-extensions',
     version=__version__,
-    packages=find_packages(
-        exclude=['tests'],
-    ),
+    packages=find_packages(),
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
     ],
-    extra_require={
-        'dev': [
-            'pytest',
-        ]
-    }
+    tests_require=['pytest'],
 )

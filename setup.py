@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 
 from setuptools import setup, find_packages
+import re, io
 
-__version__ = "0.0.1"
+__version__ = re.search(
+    r'__version__\s*=\s*[rRfFuU]{0,2}[\'"]([^\'"]*)[\'"]',
+    io.open('msal_extensions/__init__.py', encoding='utf_8_sig').read()
+    ).group(1)
 
 setup(
     name='msal-extensions',

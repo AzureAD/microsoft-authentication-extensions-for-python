@@ -11,7 +11,9 @@ __version__ = re.search(
 setup(
     name='msal-extensions',
     version=__version__,
-    packages=find_packages(),
+    packages=find_packages(
+        exclude=['tests'],
+    ),
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
     ],

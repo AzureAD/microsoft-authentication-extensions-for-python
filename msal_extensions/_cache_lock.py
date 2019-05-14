@@ -6,6 +6,10 @@ import portalocker
 
 
 class CrossPlatLock(object):
+    """
+    Offers a mechanism for waiting until another process is finished interacting with a shared resource. This is
+    specifically written to interact with a class of the same name in the .NET extensions library.
+    """
     TIMEOUT = datetime.timedelta(minutes=1)
     RETRY_WAIT = datetime.timedelta(milliseconds=100)
     RETRY_COUNT = int(TIMEOUT.total_seconds() / RETRY_WAIT.total_seconds())

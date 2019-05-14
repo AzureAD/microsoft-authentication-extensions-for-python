@@ -15,5 +15,9 @@ setup(
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
     ],
+    install_requires=[
+        'psutil~=5.0',
+        'portalocker~=1.0',
+    ],
     tests_require=['pytest'],
 )

@@ -14,9 +14,6 @@ class CrossPlatLock(object):
 
     def __enter__(self):
         pid = os.getpid()
-        lock_dir = os.path.dirname(self._lockpath)
-        if not os.path.exists(lock_dir):
-            os.makedirs(lock_dir)
 
         self._fh = open(self._lockpath, 'wb+', buffering=0)
         portalocker.lock(self._fh, portalocker.LOCK_EX)

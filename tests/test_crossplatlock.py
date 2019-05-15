@@ -1,5 +1,5 @@
 import pytest
-from msal_extensions import CrossPlatLock
+from msal_extensions.cache_lock import CrossPlatLock
 
 
 def test_ensure_file_deleted():

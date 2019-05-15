@@ -1,7 +1,7 @@
 import os
+import sys
 import errno
 import datetime
-import psutil
 import portalocker
 
 
@@ -19,14 +19,13 @@ class CrossPlatLock(object):
 
     def __enter__(self):
         pid = os.getpid()
-        proc = psutil.Process(pid)
         lock_dir = os.path.dirname(self._lockpath)
         if not os.path.exists(lock_dir):
             os.makedirs(lock_dir)
 
         self._fh = open(self._lockpath, 'wb+', buffering=0)
         portalocker.lock(self._fh, portalocker.LOCK_EX)
-        self._fh.write('{} {}'.format(pid, proc.name()).encode('utf-8'))
+        self._fh.write('{} {}'.format(pid, sys.argv[0]).encode('utf-8'))
 
     def __exit__(self, *args):
         self._fh.close()

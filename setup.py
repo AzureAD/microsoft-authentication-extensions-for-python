@@ -15,5 +15,8 @@ setup(
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
     ],
+    install_requires=[
+        'portalocker~=1.0',
+    ],
     tests_require=['pytest'],
 )

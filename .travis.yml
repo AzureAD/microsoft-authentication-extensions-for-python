@@ -52,5 +52,5 @@ install:
   - pip install .
 
 script:
-  - pylint
+  - pylint msal_extensions
   - tox

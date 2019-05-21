@@ -23,19 +23,13 @@ class DATA_BLOB(ctypes.Structure):
     """
     _fields_ = [("cbData", wintypes.DWORD), ("pbData", ctypes.POINTER(ctypes.c_char))]
 
-    def __del__(self):
-        _local_free(self.pbData)
-
     def raw(self):
         # type: () -> bytes
-        """
-        Copies the contents of this Data Blob into an object native to Python.
-        :return:  A buffer containing the contents of this DATA_BLOB.
-        """
         cb_data = int(self.cbData)
         pb_data = self.pbData
         buffer = ctypes.c_buffer(cb_data)
         _memcpy(buffer, pb_data, cb_data)
+        _local_free(pb_data)
         return buffer.raw
 
 

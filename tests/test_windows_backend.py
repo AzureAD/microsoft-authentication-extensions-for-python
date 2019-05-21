@@ -1,6 +1,5 @@
 import sys
 import os
-import pathlib
 import shutil
 import tempfile
 import pytest

@@ -42,6 +42,7 @@ class DATA_BLOB(ctypes.Structure):
 # This code is modeled from a StackOverflow question, which can be found here:
 # https://stackoverflow.com/questions/463832/using-dpapi-with-python
 class WindowsDataProtectionAgent(object):
+
     def __init__(self, **kwargs):
         # type: (str) -> None
         if 'entropy' in kwargs:
@@ -118,17 +119,21 @@ class WindowsTokenCache(msal.SerializableTokenCache):
         self._dp_agent = WindowsDataProtectionAgent(entropy=entropy)
         self._last_sync = 0  # _last_sync is a Unixtime
 
-    def _has_state_changed(self):
+    def needs_refresh(self):
         # type: () -> Bool
+        """
+        Inspects the file holding the encrypted TokenCache to see if a read is necessary.
+        :return: True if there are changes not reflected in memory, False otherwise.
+        """
         try:
-            return self.has_state_changed or self._last_sync < os.path.getmtime(self._cache_location)
+            return self._last_sync < os.path.getmtime(self._cache_location)
         except OSError as e:
             if e.errno != errno.ENOENT:
                 raise e
             return False
 
     def add(self, event, **kwargs):
-        if self._has_state_changed:
+        if self.needs_refresh():
             try:
                 self._read()
             except OSError as e:
@@ -148,7 +153,7 @@ class WindowsTokenCache(msal.SerializableTokenCache):
         self._write()
 
     def remove_rt(self, rt_item):
-        if self._has_state_changed:
+        if self.needs_refresh():
             try:
                 self._read()
             except OSError as e:
@@ -158,7 +163,7 @@ class WindowsTokenCache(msal.SerializableTokenCache):
         self._write()
 
     def find(self, credential_type, target=None, query=None):
-        if self._has_state_changed:
+        if self.needs_refresh():
             try:
                 self._read()
             except OSError as e:

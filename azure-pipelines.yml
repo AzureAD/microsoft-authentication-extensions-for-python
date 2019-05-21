@@ -6,3 +6,24 @@ trigger:
   branches:
     include:
       - '*'
+
+jobs:
+  - job: Lint
+    diplayName: Run Linter
+
+    pool:
+      vmImage: 'ubuntu-16.04'
+
+    steps:
+      - task: UsePythonVersion@0
+        displayName: 'Use Python 3.x'
+        inputs:
+          versionSpec: 3.x
+
+      - bash: |
+          pip install pylint
+        displayName: 'Install pylint'
+
+      - bash: |
+          pylint msal_extensions
+        displayName: 'Run pylint'

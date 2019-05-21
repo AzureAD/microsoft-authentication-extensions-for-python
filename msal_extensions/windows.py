@@ -37,15 +37,13 @@ class DATA_BLOB(ctypes.Structure):
 # https://stackoverflow.com/questions/463832/using-dpapi-with-python
 class WindowsDataProtectionAgent(object):
 
-    def __init__(self, **kwargs):
+    def __init__(self, entropy=None):
         # type: (str) -> None
-        if 'entropy' in kwargs:
-            entropy = kwargs['entropy'].encode('utf-8')
-            self._entropy_buffer = ctypes.c_buffer(entropy, len(entropy))
-            self._entropy_blob = DATA_BLOB(len(entropy), self._entropy_buffer)
-        else:
-            self._entropy_buffer = None
-            self._entropy_blob = None
+        self._entropy_blob = None
+        if entropy:
+            entropy_utf8 = entropy.encode('utf-8')
+            buffer = ctypes.c_buffer(entropy_utf8, len(entropy_utf8))
+            self._entropy_blob = DATA_BLOB(len(entropy_utf8), buffer)
 
     def protect(self, message):
         # type: (str) -> bytes

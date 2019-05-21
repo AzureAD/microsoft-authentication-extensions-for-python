@@ -94,19 +94,19 @@ class WindowsDataProtectionAgent(object):
         return u''
 
 
-class _WindowsTokenCache(msal.SerializableTokenCache):
+class WindowsTokenCache(msal.SerializableTokenCache):
     DEFAULT_CACHE_LOCATION = os.path.join(os.getenv('LOCALAPPDATA'), '.IdentityService', 'msal.cache')
     DEFAULT_ENTROPY = ''
 
     def __init__(self, **kwargs):
-        super(_WindowsTokenCache, self).__init__()
+        super(WindowsTokenCache, self).__init__()
 
-        self._cache_location = _WindowsTokenCache.DEFAULT_CACHE_LOCATION  # type: str
+        self._cache_location = WindowsTokenCache.DEFAULT_CACHE_LOCATION  # type: str
         if 'cache_location' in kwargs:
-            self._cache_location = kwargs['cache_location'] or _WindowsTokenCache.DEFAULT_CACHE_LOCATION
+            self._cache_location = kwargs['cache_location'] or WindowsTokenCache.DEFAULT_CACHE_LOCATION
         self._lock_location = self._cache_location + '.lockfile'
 
-        entropy = _WindowsTokenCache.DEFAULT_ENTROPY
+        entropy = WindowsTokenCache.DEFAULT_ENTROPY
         if 'entropy' in kwargs:
             entropy = kwargs['entropy']
         self._dp_agent = WindowsDataProtectionAgent(entropy=entropy)
@@ -128,7 +128,7 @@ class _WindowsTokenCache(msal.SerializableTokenCache):
             except OSError as e:
                 if e.errno != errno.ENOENT:
                     raise e
-        super(_WindowsTokenCache, self).add(event, **kwargs)
+        super(WindowsTokenCache, self).add(event, **kwargs)
         self._write()
 
     def update_rt(self, rt_item, new_rt):
@@ -138,7 +138,7 @@ class _WindowsTokenCache(msal.SerializableTokenCache):
             except OSError as e:
                 if e.errno != errno.ENOENT:
                     raise e
-        super(_WindowsTokenCache, self).update_rt(rt_item, new_rt)
+        super(WindowsTokenCache, self).update_rt(rt_item, new_rt)
         self._write()
 
     def remove_rt(self, rt_item):
@@ -148,7 +148,7 @@ class _WindowsTokenCache(msal.SerializableTokenCache):
             except OSError as e:
                 if e.errno != errno.ENOENT:
                     raise e
-        super(_WindowsTokenCache, self).remove_rt(rt_item)
+        super(WindowsTokenCache, self).remove_rt(rt_item)
         self._write()
 
     def find(self, credential_type, target=None, query=None):
@@ -158,7 +158,7 @@ class _WindowsTokenCache(msal.SerializableTokenCache):
             except OSError as e:
                 if e.errno != errno.ENOENT:
                     raise e
-        return super(_WindowsTokenCache, self).find(credential_type, target=target, query=query)
+        return super(WindowsTokenCache, self).find(credential_type, target=target, query=query)
 
     def _write(self):
         with CrossPlatLock(self._lock_location), open(self._cache_location, 'wb') as fh:

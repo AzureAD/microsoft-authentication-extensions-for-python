@@ -7,7 +7,7 @@ import msal
 if not sys.platform.startswith('win'):
     pytest.skip('skipping windows-only tests', allow_module_level=True)
 else:
-    from msal_extensions._windows import WindowsDataProtectionAgent
+    from msal_extensions.windows import WindowsDataProtectionAgent
 
 
 def test_dpapi_roundtrip_with_entropy():

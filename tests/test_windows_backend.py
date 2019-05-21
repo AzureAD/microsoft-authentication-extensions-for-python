@@ -36,7 +36,11 @@ def test_dpapi_roundtrip_with_entropy():
         assert got == tc
 
 
-def test_read_msal_cache():
+def test_read_msal_cache_direct():
+    """
+    This loads and unprotects an MSAL cache directly, only using the DataProtectionAgent. It is not meant to test the
+    wrapper `WindowsTokenCache`.
+    """
     cache_locations = [
         os.path.join(os.getenv('LOCALAPPDATA'), '.IdentityService', 'msal.cache'), # this is where it's supposed to be
         os.path.join(os.getenv('LOCALAPPDATA'), '.IdentityServices', 'msal.cache'), # There was a miscommunications about whether this was plural or not.
@@ -63,4 +67,3 @@ def test_read_msal_cache():
     cache.deserialize(raw)
     access_tokens = cache.find(msal.TokenCache.CredentialType.ACCESS_TOKEN)
     assert len(access_tokens) > 0
-

@@ -1,0 +1,56 @@
+language: python
+python:
+  - "2.7"
+  - "3.5"
+  - "3.6"
+  - "3.7"
+
+matrix:
+  fast_finish: true
+  include:
+    - python: "2.7"
+      env: TOXENV=py27
+      os: osx
+    - python: "3.5"
+      env: TOXENV=py35
+      os: osx
+    - python: "3.6"
+      env: TOXENV=py36
+      os: osx
+    - python: "3.7"
+      env: TOXENV=py37
+      os: osx
+    - python: "2.7"
+      env: TOXENV=py27
+      os: linux
+    - python: "3.5"
+      env: TOXENV=py35
+      os: linux
+    - python: "3.6"
+      env: TOXENV=py36
+      os: linux
+    - python: "3.7"
+      env: TOXENV=py37
+      os: linux
+    - python: "2.7"
+      env: TOXENV=py27
+      os: windows
+    - python: "3.5"
+      env: TOXENV=py35
+      os: windows
+    - python: "3.6"
+      env: TOXENV=py36
+      os: windows
+    - python: "3.7"
+      env: TOXENV=py37
+      os: windows
+
+before_install:
+  - pip install tox pylint
+
+install:
+  - pip install .
+
+script:
+  - pylint
+  - tox

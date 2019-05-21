@@ -94,20 +94,14 @@ class WindowsDataProtectionAgent(object):
 
 
 class WindowsTokenCache(msal.SerializableTokenCache):
-    DEFAULT_CACHE_LOCATION = os.path.join(os.getenv('LOCALAPPDATA'), '.IdentityService', 'msal.cache')
-    DEFAULT_ENTROPY = ''
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 cache_location=os.path.join(os.getenv('LOCALAPPDATA'), '.IdentityService', 'msal.cache'),
+                 entropy=''):
         super(WindowsTokenCache, self).__init__()
 
-        self._cache_location = WindowsTokenCache.DEFAULT_CACHE_LOCATION  # type: str
-        if 'cache_location' in kwargs:
-            self._cache_location = kwargs['cache_location'] or WindowsTokenCache.DEFAULT_CACHE_LOCATION
+        self._cache_location = cache_location
         self._lock_location = self._cache_location + '.lockfile'
-
-        entropy = WindowsTokenCache.DEFAULT_ENTROPY
-        if 'entropy' in kwargs:
-            entropy = kwargs['entropy']
         self._dp_agent = WindowsDataProtectionAgent(entropy=entropy)
         self._last_sync = 0  # _last_sync is a Unixtime
 

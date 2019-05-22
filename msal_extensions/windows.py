@@ -17,14 +17,16 @@ class DataBlob(ctypes.Structure):
     """A wrapper for interacting with the _CRYPTOAPI_BLOB type and its many aliases. This type is
     exposed from Wincrypt.h in XP and above.
 
+    The memory associated with a DataBlob itself does not need to be freed, as the Python runtime
+    will correctly clean it up. However, depending on the data it points at, it may still need to be
+    freed. For instance, memory created by ctypes.create_string_buffer is already managed, and needs
+    to not be freed. However, memory allocated by CryptProtectData and CryptUnprotectData must have
+    LocalFree called on pbData.
+
     See documentation for this type at:
     https://msdn.microsoft.com/en-us/7a06eae5-96d8-4ece-98cb-cf0710d2ddbd
     """
     _fields_ = [("cbData", wintypes.DWORD), ("pbData", ctypes.POINTER(ctypes.c_char))]
-
-    def __del__(self):
-        if self.pbData and self.cbData > 0:
-            _local_free(self.pbData)
 
     def raw(self):
         # type: () -> bytes
@@ -68,7 +70,10 @@ class WindowsDataProtectionAgent(object):
                 None,
                 _CRYPTPROTECT_UI_FORBIDDEN,
                 ctypes.byref(result)):
-            return result.raw()
+            try:
+                return result.raw()
+            finally:
+                _local_free(result.pbData)
         return b''
 
     def unprotect(self, cipher_text):
@@ -91,7 +96,10 @@ class WindowsDataProtectionAgent(object):
                 _CRYPTPROTECT_UI_FORBIDDEN,
                 ctypes.byref(result)
         ):
-            return result.raw().decode('utf-8')
+            try:
+                return result.raw().decode('utf-8')
+            finally:
+                _local_free(result.pbData)
         return u''
 
 

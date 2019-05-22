@@ -22,13 +22,16 @@ class DataBlob(ctypes.Structure):
     """
     _fields_ = [("cbData", wintypes.DWORD), ("pbData", ctypes.POINTER(ctypes.c_char))]
 
+    def __del__(self):
+        if self.pbData and self.cbData > 0:
+            _local_free(self.pbData)
+
     def raw(self):
         # type: () -> bytes
         cb_data = int(self.cbData)
         pb_data = self.pbData
         buffer = ctypes.create_string_buffer(cb_data)
         _memcpy(buffer, pb_data, cb_data)
-        _local_free(pb_data)
         return buffer.raw
 
 

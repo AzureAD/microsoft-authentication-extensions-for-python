@@ -25,7 +25,7 @@ def test_dpapi_roundtrip_with_entropy():
         uuid.uuid4().hex,
     ]
 
-    for tc in test_cases:    
+    for tc in test_cases:
         ciphered = subject_with_entropy.protect(tc)
         assert ciphered != tc
 

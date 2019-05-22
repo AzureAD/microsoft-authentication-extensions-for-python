@@ -8,6 +8,7 @@ import msal
 from .cache_lock import CrossPlatLock
 
 _LOCAL_FREE = ctypes.windll.kernel32.LocalFree
+_GET_LAST_ERROR = ctypes.windll.kernel32.GetLastError
 _MEMCPY = ctypes.cdll.msvcrt.memcpy
 _CRYPT_PROTECT_DATA = ctypes.windll.crypt32.CryptProtectData
 _CRYPT_UNPROTECT_DATA = ctypes.windll.crypt32.CryptUnprotectData
@@ -81,7 +82,9 @@ class WindowsDataProtectionAgent(object):
                 return result.raw()
             finally:
                 _LOCAL_FREE(result.pbData)
-        return b''
+
+        err_code = _GET_LAST_ERROR()
+        raise OSError(None, '', err_code)
 
     def unprotect(self, cipher_text):
         # type: (bytes) -> str
@@ -109,7 +112,8 @@ class WindowsDataProtectionAgent(object):
                 return result.raw().decode('utf-8')
             finally:
                 _LOCAL_FREE(result.pbData)
-        return u''
+        err_code = _GET_LAST_ERROR()
+        raise OSError(None, '', err_code)
 
 
 class WindowsTokenCache(msal.SerializableTokenCache):

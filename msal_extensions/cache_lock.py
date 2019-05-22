@@ -6,7 +6,7 @@ import portalocker
 
 
 class CrossPlatLock(object):
-    """ Offers a mechanism for waiting until another process is finished interacting with a shared
+    """Offers a mechanism for waiting until another process is finished interacting with a shared
     resource. This is specifically written to interact with a class of the same name in the .NET
     extensions library.
     """

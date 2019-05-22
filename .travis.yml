@@ -29,7 +29,7 @@ matrix:
     - name: "Python 3.7 on Windows"
       env: TOXENV=py37 PATH=/c/Python37:/c/Python37/Scripts:$PATH
       os: windows
-      before_install: choco install python
+      before_install: choco install python37
       language: shell
 
 install:

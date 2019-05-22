@@ -151,7 +151,7 @@ class WindowsTokenCache(msal.SerializableTokenCache):
             super(WindowsTokenCache, self).remove_rt(rt_item)
             self._write()
 
-    def find(self, credential_type, target=None, query=None):
+    def find(self, credential_type, **kwargs):
         with CrossPlatLock(self._lock_location):
             if self._needs_refresh():
                 try:
@@ -159,7 +159,7 @@ class WindowsTokenCache(msal.SerializableTokenCache):
                 except OSError as e:
                     if e.errno != errno.ENOENT:
                         raise e
-            return super(WindowsTokenCache, self).find(credential_type, target=target, query=query)
+            return super(WindowsTokenCache, self).find(credential_type, **kwargs)
 
     def _write(self):
         with open(self._cache_location, 'wb') as fh:

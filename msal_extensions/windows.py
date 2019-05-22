@@ -1,3 +1,4 @@
+"""Implements a Windows Specific TokenCache, and provides auxiliary helper types."""
 import os
 import ctypes
 from ctypes import wintypes
@@ -6,14 +7,14 @@ import errno
 import msal
 from .cache_lock import CrossPlatLock
 
-_local_free = ctypes.windll.kernel32.LocalFree
-_memcpy = ctypes.cdll.msvcrt.memcpy
-_crypt_protect_data = ctypes.windll.crypt32.CryptProtectData
-_crypt_unprotect_data = ctypes.windll.crypt32.CryptUnprotectData
+_LOCAL_FREE = ctypes.windll.kernel32.LocalFree
+_MEMCPY = ctypes.cdll.msvcrt.memcpy
+_CRYPT_PROTECT_DATA = ctypes.windll.crypt32.CryptProtectData
+_CRYPT_UNPROTECT_DATA = ctypes.windll.crypt32.CryptUnprotectData
 _CRYPTPROTECT_UI_FORBIDDEN = 0x01
 
 
-class DataBlob(ctypes.Structure):
+class DataBlob(ctypes.Structure):  # pylint: disable=too-few-public-methods
     """A wrapper for interacting with the _CRYPTOAPI_BLOB type and its many aliases. This type is
     exposed from Wincrypt.h in XP and above.
 
@@ -30,16 +31,20 @@ class DataBlob(ctypes.Structure):
 
     def raw(self):
         # type: () -> bytes
+        """Copies the message from the DataBlob in natively allocated memory into Python controlled
+        memory.
+        :return A byte array that matches what is stored in native-memory."""
         cb_data = int(self.cbData)
         pb_data = self.pbData
         buffer = ctypes.create_string_buffer(cb_data)
-        _memcpy(buffer, pb_data, cb_data)
+        _MEMCPY(buffer, pb_data, cb_data)
         return buffer.raw
 
 
 # This code is modeled from a StackOverflow question, which can be found here:
 # https://stackoverflow.com/questions/463832/using-dpapi-with-python
 class WindowsDataProtectionAgent(object):
+    """A mechanism for interacting with the Windows DP API Native library, e.g. Crypt32.dll."""
 
     def __init__(self, entropy=None):
         # type: (str) -> None
@@ -51,6 +56,8 @@ class WindowsDataProtectionAgent(object):
 
     def protect(self, message):
         # type: (str) -> bytes
+        """Encrypts a message.
+        :return cipher text holding the original message."""
 
         message = message.encode('utf-8')
         message_buffer = ctypes.create_string_buffer(message, len(message))
@@ -62,7 +69,7 @@ class WindowsDataProtectionAgent(object):
         else:
             entropy = None
 
-        if _crypt_protect_data(
+        if _CRYPT_PROTECT_DATA(
                 ctypes.byref(message_blob),
                 u"python_data",
                 entropy,
@@ -73,11 +80,13 @@ class WindowsDataProtectionAgent(object):
             try:
                 return result.raw()
             finally:
-                _local_free(result.pbData)
+                _LOCAL_FREE(result.pbData)
         return b''
 
     def unprotect(self, cipher_text):
         # type: (bytes) -> str
+        """Decrypts cipher text that is provided.
+        :return The original message hidden in the cipher text."""
         ct_buffer = ctypes.create_string_buffer(cipher_text, len(cipher_text))
         ct_blob = DataBlob(len(cipher_text), ct_buffer)
         result = DataBlob()
@@ -87,7 +96,7 @@ class WindowsDataProtectionAgent(object):
         else:
             entropy = None
 
-        if _crypt_unprotect_data(
+        if _CRYPT_UNPROTECT_DATA(
                 ctypes.byref(ct_blob),
                 None,
                 entropy,
@@ -99,7 +108,7 @@ class WindowsDataProtectionAgent(object):
             try:
                 return result.raw().decode('utf-8')
             finally:
-                _local_free(result.pbData)
+                _LOCAL_FREE(result.pbData)
         return u''
 
 
@@ -166,7 +175,7 @@ class WindowsTokenCache(msal.SerializableTokenCache):
             super(WindowsTokenCache, self).remove_rt(rt_item)
             self._write()
 
-    def find(self, credential_type, **kwargs):
+    def find(self, credential_type, **kwargs):  # pylint: disable=arguments-differ
         with CrossPlatLock(self._lock_location):
             if self._needs_refresh():
                 try:

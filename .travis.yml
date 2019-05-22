@@ -1,0 +1,46 @@
+language: python
+
+matrix:
+  fast_finish: true
+  include:
+    - python: "2.7"
+      env: TOXENV=py27
+      os: linux
+    - python: "3.5"
+      env: TOXENV=py35
+      os: linux
+    - python: "3.6"
+      env: TOXENV=py36
+      os: linux
+    - python: "3.7"
+      env: TOXENV=py37
+      os: linux
+      dist: xenial
+    - name: "Python 3.7 on macOS"
+      env: TOXENV=py37
+      os: osx
+      osx_image: xcode10.2
+      language: shell
+    - name: "Python 2.7 on Windows"
+      env: TOXENV=py27 PATH=/c/Python27:/c/Python27/Scripts:$PATH
+      os: windows
+      before_install: choco install python2
+      language: shell
+    - name: "Python 3.5 on Windows"
+      env: TOXENV=py35 PATH=/c/Python35:/c/Python35/Scripts:$PATH
+      os: windows
+      before_install: choco install python3 --version 3.5.4
+      language: shell
+    - name: "Python 3.7 on Windows"
+      env: TOXENV=py37 PATH=/c/Python37:/c/Python37/Scripts:$PATH
+      os: windows
+      before_install: choco install python3 --version 3.7.3
+      language: shell
+
+install:
+  - pip install tox pylint
+  - pip install .
+
+script:
+  - pylint msal_extensions
+  - tox

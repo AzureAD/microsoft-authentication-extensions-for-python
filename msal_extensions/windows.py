@@ -118,7 +118,7 @@ class WindowsTokenCache(msal.SerializableTokenCache):
     """
     def __init__(self,
                  cache_location=os.path.join(
-                     os.getenv('LOCALAPPDATA', ''),
+                     os.getenv('LOCALAPPDATA', os.path.expanduser('~')),
                      '.IdentityService',
                      'msal.cache'),
                  entropy=''):

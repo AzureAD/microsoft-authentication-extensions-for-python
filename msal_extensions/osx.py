@@ -283,9 +283,9 @@ class OSXTokenCache(msal.SerializableTokenCache):
         super(OSXTokenCache, self).remove_rt(rt_item)
         self._write()
 
-    def find(self, credential_type, target=None, query=None):
+    def find(self, credential_type, **kwargs):
         self._read()
-        return super(OSXTokenCache, self).find(credential_type, target=target, query=query)
+        return super(OSXTokenCache, self).find(credential_type, **kwargs)
 
     def _read(self):
         with Keychain() as locker:

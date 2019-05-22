@@ -84,7 +84,7 @@ class WindowsDataProtectionAgent(object):
                 _LOCAL_FREE(result.pbData)
 
         err_code = _GET_LAST_ERROR()
-        raise OSError(None, '', err_code)
+        raise OSError(errno=1, strerr='', winerr=err_code)
 
     def unprotect(self, cipher_text):
         # type: (bytes) -> str
@@ -113,7 +113,7 @@ class WindowsDataProtectionAgent(object):
             finally:
                 _LOCAL_FREE(result.pbData)
         err_code = _GET_LAST_ERROR()
-        raise OSError(None, '', err_code)
+        raise OSError(errno=1, strerr='', winerr=err_code)
 
 
 class WindowsTokenCache(msal.SerializableTokenCache):

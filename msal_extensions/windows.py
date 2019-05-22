@@ -36,9 +36,9 @@ class DataBlob(ctypes.Structure):  # pylint: disable=too-few-public-methods
         :return A byte array that matches what is stored in native-memory."""
         cb_data = int(self.cbData)
         pb_data = self.pbData
-        buffer = ctypes.create_string_buffer(cb_data)
-        _MEMCPY(buffer, pb_data, cb_data)
-        return buffer.raw
+        blob_buffer = ctypes.create_string_buffer(cb_data)
+        _MEMCPY(blob_buffer, pb_data, cb_data)
+        return blob_buffer.raw
 
 
 # This code is modeled from a StackOverflow question, which can be found here:
@@ -51,8 +51,8 @@ class WindowsDataProtectionAgent(object):
         self._entropy_blob = None
         if entropy:
             entropy_utf8 = entropy.encode('utf-8')
-            buffer = ctypes.create_string_buffer(entropy_utf8, len(entropy_utf8))
-            self._entropy_blob = DataBlob(len(entropy_utf8), buffer)
+            blob_buffer = ctypes.create_string_buffer(entropy_utf8, len(entropy_utf8))
+            self._entropy_blob = DataBlob(len(entropy_utf8), blob_buffer)
 
     def protect(self, message):
         # type: (str) -> bytes

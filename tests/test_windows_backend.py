@@ -43,10 +43,11 @@ def test_read_msal_cache_direct():
     This loads and unprotects an MSAL cache directly, only using the DataProtectionAgent. It is not meant to test the
     wrapper `WindowsTokenCache`.
     """
+    localappdata_location = os.getenv('LOCALAPPDATA', os.path.expanduser('~'))
     cache_locations = [
-        os.path.join(os.getenv('LOCALAPPDATA'), '.IdentityService', 'msal.cache'), # this is where it's supposed to be
-        os.path.join(os.getenv('LOCALAPPDATA'), '.IdentityServices', 'msal.cache'), # There was a miscommunications about whether this was plural or not.
-        os.path.join(os.getenv('LOCALAPPDATA'), 'msal.cache'), # The earliest most naive builds used this locations.
+        os.path.join(localappdata_location, '.IdentityService', 'msal.cache'), # this is where it's supposed to be
+        os.path.join(localappdata_location, '.IdentityServices', 'msal.cache'), # There was a miscommunications about whether this was plural or not.
+        os.path.join(localappdata_location, 'msal.cache'), # The earliest most naive builds used this locations.
     ]
 
     found = False

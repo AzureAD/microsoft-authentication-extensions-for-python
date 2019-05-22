@@ -5,7 +5,7 @@ import errno
 import portalocker
 
 
-class CrossPlatLock(object):  # pylint: disable=R0205
+class CrossPlatLock(object):
     """ Offers a mechanism for waiting until another process is finished interacting with a shared
     resource. This is specifically written to interact with a class of the same name in the .NET
     extensions library.

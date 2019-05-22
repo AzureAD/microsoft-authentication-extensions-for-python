@@ -1,16 +1,18 @@
+"""Provides a mechanism for not competing with other processes interacting with an MSAL cache."""
 import os
 import sys
 import errno
 import portalocker
 
 
-class CrossPlatLock(object):
-    """
-    Offers a mechanism for waiting until another process is finished interacting with a shared resource. This is
-    specifically written to interact with a class of the same name in the .NET extensions library.
+class CrossPlatLock(object):  # pylint: disable=R0205
+    """ Offers a mechanism for waiting until another process is finished interacting with a shared
+    resource. This is specifically written to interact with a class of the same name in the .NET
+    extensions library.
     """
     def __init__(self, lockfile_path):
         self._lockpath = lockfile_path
+        self._fh = None
 
     def __enter__(self):
         pid = os.getpid()
@@ -22,8 +24,9 @@ class CrossPlatLock(object):
     def __exit__(self, *args):
         self._fh.close()
         try:
-            # Attempt to delete the lockfile. In either of the failure cases enumerated below, it is likely that
-            # another process has raced this one and ended up clearing or locking the file for itself.
+            # Attempt to delete the lockfile. In either of the failure cases enumerated below, it is
+            # likely that another process has raced this one and ended up clearing or locking the
+            # file for itself.
             os.remove(self._lockpath)
         except PermissionError:
             pass

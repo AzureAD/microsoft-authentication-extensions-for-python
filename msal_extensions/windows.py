@@ -105,7 +105,7 @@ class WindowsTokenCache(msal.SerializableTokenCache):
         self._dp_agent = WindowsDataProtectionAgent(entropy=entropy)
         self._last_sync = 0  # _last_sync is a Unixtime
 
-    def needs_refresh(self):
+    def _needs_refresh(self):
         # type: () -> Bool
         """
         Inspects the file holding the encrypted TokenCache to see if a read is necessary.
@@ -120,7 +120,7 @@ class WindowsTokenCache(msal.SerializableTokenCache):
 
     def add(self, event, **kwargs):
         with CrossPlatLock(self._lock_location):
-            if self.needs_refresh():
+            if self._needs_refresh():
                 try:
                     self._read()
                 except OSError as e:
@@ -131,7 +131,7 @@ class WindowsTokenCache(msal.SerializableTokenCache):
 
     def update_rt(self, rt_item, new_rt):
         with CrossPlatLock(self._lock_location):
-            if self.needs_refresh():
+            if self._needs_refresh():
                 try:
                     self._read()
                 except OSError as e:
@@ -142,7 +142,7 @@ class WindowsTokenCache(msal.SerializableTokenCache):
 
     def remove_rt(self, rt_item):
         with CrossPlatLock(self._lock_location):
-            if self.needs_refresh():
+            if self._needs_refresh():
                 try:
                     self._read()
                 except OSError as e:
@@ -153,7 +153,7 @@ class WindowsTokenCache(msal.SerializableTokenCache):
 
     def find(self, credential_type, target=None, query=None):
         with CrossPlatLock(self._lock_location):
-            if self.needs_refresh():
+            if self._needs_refresh():
                 try:
                     self._read()
                 except OSError as e:

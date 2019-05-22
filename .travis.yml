@@ -21,6 +21,11 @@ matrix:
       os: osx
       osx_image: xcode10.2
       language: shell
+    - name: "Python 2.7 on Windows"
+      env: TOXENV=py27 PATH=/c/Python27:/c/Python27/Scripts:$PATH
+      os: windows
+      before_install: choco install python2
+      language: shell
     - name: "Python 3.7 on Windows"
       env: TOXENV=py37 PATH=/c/Python37:/c/Python37/Scripts:$PATH
       os: windows

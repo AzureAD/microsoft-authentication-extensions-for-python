@@ -1,5 +1,6 @@
 import sys
 import os
+import errno
 import shutil
 import tempfile
 import pytest
@@ -57,8 +58,10 @@ def test_read_msal_cache_direct():
                 contents = fh.read()
             found = True
             break
-        except FileNotFoundError:
-                pass
+        except OSError as exp:
+            if exp.errno != errno.ENOENT:
+                raise exp
+
     if not found:
             pytest.skip('could not find the msal.cache file (try logging in using MSAL)')
 

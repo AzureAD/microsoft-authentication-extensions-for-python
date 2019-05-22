@@ -57,8 +57,9 @@ def test_read_msal_cache_direct():
             with open(loc, mode='rb') as fh:
                 contents = fh.read()
             found = True
+
             break
-        except OSError as exp:
+        except IOError as exp:
             if exp.errno != errno.ENOENT:
                 raise exp
 

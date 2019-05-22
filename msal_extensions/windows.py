@@ -141,7 +141,7 @@ class WindowsTokenCache(msal.SerializableTokenCache):
         """
         try:
             return self._last_sync < os.path.getmtime(self._cache_location)
-        except OSError as exp:
+        except IOError as exp:
             if exp.errno != errno.ENOENT:
                 raise exp
             return False
@@ -151,7 +151,7 @@ class WindowsTokenCache(msal.SerializableTokenCache):
             if self._needs_refresh():
                 try:
                     self._read()
-                except OSError as exp:
+                except IOError as exp:
                     if exp.errno != errno.ENOENT:
                         raise exp
             super(WindowsTokenCache, self).add(event, **kwargs)
@@ -162,7 +162,7 @@ class WindowsTokenCache(msal.SerializableTokenCache):
             if self._needs_refresh():
                 try:
                     self._read()
-                except OSError as exp:
+                except IOError as exp:
                     if exp.errno != errno.ENOENT:
                         raise exp
             super(WindowsTokenCache, self).update_rt(rt_item, new_rt)
@@ -173,7 +173,7 @@ class WindowsTokenCache(msal.SerializableTokenCache):
             if self._needs_refresh():
                 try:
                     self._read()
-                except OSError as exp:
+                except IOError as exp:
                     if exp.errno != errno.ENOENT:
                         raise exp
             super(WindowsTokenCache, self).remove_rt(rt_item)
@@ -184,7 +184,7 @@ class WindowsTokenCache(msal.SerializableTokenCache):
             if self._needs_refresh():
                 try:
                     self._read()
-                except OSError as exp:
+                except IOError as exp:
                     if exp.errno != errno.ENOENT:
                         raise exp
             return super(WindowsTokenCache, self).find(credential_type, **kwargs)

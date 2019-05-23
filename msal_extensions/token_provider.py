@@ -53,20 +53,20 @@ class TokenProviderChain(TokenProvider):
 
     def get_token(self, scopes=None, username=None):
         available = (item.get_token(scopes=scopes) for item in self._links if item.available())
-        return next((for token in available if token))
+        return next((token for token in available if token))
 
 
 class ServicePrincipalProvider(TokenProvider):
     DEFAULT_CLIENT_ID = os.getenv('AZURE_CLIENT_ID')
     DEFAULT_CLIENT_SECRET = os.getenv('AZURE_CLIENT_SECRET')
 
-    def __init__(self, client_id=None, client_secret=None):
+    def __init__(self, client_id=None, client_credential=None):
         client_id = client_id or ServicePrincipalProvider.DEFAULT_CLIENT_ID
-        client_secret = client_secret or ServicePrincipalProvider.DEFAULT_CLIENT_SECRET
+        client_credential = client_credential or ServicePrincipalProvider.DEFAULT_CLIENT_SECRET
 
         self._app = ConfidentialClientApplication(
             client_id=client_id,
-            client_secret=client_secret,
+            client_credential=client_credential,
         )
 
     def available(self):

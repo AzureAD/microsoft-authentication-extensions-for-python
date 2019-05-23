@@ -1,5 +1,6 @@
 import sys
 import os
+import errno
 import shutil
 import tempfile
 import pytest
@@ -24,18 +25,24 @@ def test_dpapi_roundtrip_with_entropy():
         uuid.uuid4().hex,
     ]
 
-    for tc in test_cases:    
-        ciphered = subject_with_entropy.protect(tc)
-        assert ciphered != tc
+    try:
+        for tc in test_cases:
+            ciphered = subject_with_entropy.protect(tc)
+            assert ciphered != tc
 
-        got = subject_with_entropy.unprotect(ciphered)
-        assert got == tc
+            got = subject_with_entropy.unprotect(ciphered)
+            assert got == tc
 
-        ciphered = subject_without_entropy.protect(tc)
-        assert ciphered != tc
+            ciphered = subject_without_entropy.protect(tc)
+            assert ciphered != tc
 
-        got = subject_without_entropy.unprotect(ciphered)
-        assert got == tc
+            got = subject_without_entropy.unprotect(ciphered)
+            assert got == tc
+    except OSError as exp:
+        if exp.errno == errno.EIO and os.getenv('TRAVIS_REPO_SLUG'):
+            pytest.skip('DPAPI tests are known to fail in TravisCI. This effort tracked by '
+                        'https://github.com/AzureAD/microsoft-authentication-extentions-for-python'
+                        '/issues/21')
 
 
 def test_read_msal_cache_direct():
@@ -43,10 +50,11 @@ def test_read_msal_cache_direct():
     This loads and unprotects an MSAL cache directly, only using the DataProtectionAgent. It is not meant to test the
     wrapper `WindowsTokenCache`.
     """
+    localappdata_location = os.getenv('LOCALAPPDATA', os.path.expanduser('~'))
     cache_locations = [
-        os.path.join(os.getenv('LOCALAPPDATA'), '.IdentityService', 'msal.cache'), # this is where it's supposed to be
-        os.path.join(os.getenv('LOCALAPPDATA'), '.IdentityServices', 'msal.cache'), # There was a miscommunications about whether this was plural or not.
-        os.path.join(os.getenv('LOCALAPPDATA'), 'msal.cache'), # The earliest most naive builds used this locations.
+        os.path.join(localappdata_location, '.IdentityService', 'msal.cache'), # this is where it's supposed to be
+        os.path.join(localappdata_location, '.IdentityServices', 'msal.cache'), # There was a miscommunications about whether this was plural or not.
+        os.path.join(localappdata_location, 'msal.cache'), # The earliest most naive builds used this locations.
     ]
 
     found = False
@@ -55,9 +63,12 @@ def test_read_msal_cache_direct():
             with open(loc, mode='rb') as fh:
                 contents = fh.read()
             found = True
+
             break
-        except FileNotFoundError:
-                pass
+        except IOError as exp:
+            if exp.errno != errno.ENOENT:
+                raise exp
+
     if not found:
             pytest.skip('could not find the msal.cache file (try logging in using MSAL)')
 

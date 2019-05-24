@@ -301,6 +301,7 @@ __pycache__/
 # Python Auxiliary Tools
 *.egg-info/
 .tox/
+.mypy_cache/
 
 # Cake - Uncomment if you are using it
 # tools/**

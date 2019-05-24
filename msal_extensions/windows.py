@@ -165,7 +165,10 @@ class WindowsTokenCache(msal.SerializableTokenCache):
                 except IOError as exp:
                     if exp.errno != errno.ENOENT:
                         raise exp
-            super(WindowsTokenCache, self).modify(credential_type, old_entry, new_key_value_pairs=new_key_value_pairs)
+            super(WindowsTokenCache, self).modify(
+                credential_type,
+                old_entry,
+                new_key_value_pairs=new_key_value_pairs)
             self._write()
 
     def find(self, credential_type, **kwargs):  # pylint: disable=arguments-differ

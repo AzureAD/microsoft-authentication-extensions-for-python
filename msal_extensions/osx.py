@@ -2,7 +2,9 @@
 import os
 import ctypes as _ctypes
 import time
+import errno
 import msal
+from .cache_lock import CrossPlatLock
 
 OS_RESULT = _ctypes.c_int32
 
@@ -321,27 +323,68 @@ class OSXTokenCache(msal.SerializableTokenCache):
 
     def __init__(self,
                  service_name='Microsoft.Developer.IdentityService',
-                 account_name='MSALCache'):
+                 account_name='MSALCache',
+                 cache_location='~/.IdentityService/msal.cache',
+                 ):
         super(OSXTokenCache, self).__init__()
+
+        self._cache_location = os.path.expanduser(cache_location)
+        self._lock_location = self._cache_location + '.lockfile'
         self._service_name = service_name
         self._account_name = account_name
         self._last_sync = 0
 
+    def _needs_refresh(self):
+        # type: () -> Bool
+        try:
+            return self._last_sync < os.path.getmtime(self._cache_location)
+        except IOError as exp:
+            if exp.errno != errno.ENOENT:
+                raise exp
+            return False
+
     def add(self, event, **kwargs):
-        super(OSXTokenCache, self).add(event, **kwargs)
-        self._write()
+        with CrossPlatLock(self._lock_location):
+            if self._needs_refresh():
+                try:
+                    self._read()
+                except IOError as exp:
+                    if exp.errno != errno.ENOENT:
+                        raise exp
+            super(OSXTokenCache, self).add(event, **kwargs)
+            self._write()
 
     def update_rt(self, rt_item, new_rt):
-        super(OSXTokenCache, self).update_rt(rt_item, new_rt)
-        self._write()
+        with CrossPlatLock(self._lock_location):
+            if self._needs_refresh():
+                try:
+                    self._read()
+                except IOError as exp:
+                    if exp.errno != errno.ENOENT:
+                        raise exp
+            super(OSXTokenCache, self).update_rt(rt_item, new_rt)
+            self._write()
 
     def remove_rt(self, rt_item):
-        super(OSXTokenCache, self).remove_rt(rt_item)
-        self._write()
+        with CrossPlatLock(self._lock_location):
+            if self._needs_refresh():
+                try:
+                    self._read()
+                except IOError as exp:
+                    if exp.errno != errno.ENOENT:
+                        raise exp
+            super(OSXTokenCache, self).remove_rt(rt_item)
+            self._write()
 
     def find(self, credential_type, **kwargs):  # pylint: disable=arguments-differ
-        self._read()
-        return super(OSXTokenCache, self).find(credential_type, **kwargs)
+        with CrossPlatLock(self._lock_location):
+            if self._needs_refresh():
+                try:
+                    self._read()
+                except IOError as exp:
+                    if exp.errno != errno.ENOENT:
+                        raise exp
+            return super(OSXTokenCache, self).find(credential_type, **kwargs)
 
     def _read(self):
         with Keychain() as locker:

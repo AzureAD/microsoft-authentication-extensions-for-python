@@ -324,8 +324,7 @@ class OSXTokenCache(msal.SerializableTokenCache):
     def __init__(self,
                  service_name='Microsoft.Developer.IdentityService',
                  account_name='MSALCache',
-                 cache_location='~/.IdentityService/msal.cache',
-                 ):
+                 cache_location='~/.IdentityService/msal.cache'):
         super(OSXTokenCache, self).__init__()
 
         self._cache_location = os.path.expanduser(cache_location)

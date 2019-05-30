@@ -354,7 +354,7 @@ class OSXTokenCache(msal.SerializableTokenCache):
             super(OSXTokenCache, self).add(event, **kwargs)
             self._write()
 
-    def update_rt(self, rt_item, new_rt):
+    def modify(self, credential_type, old_entry, new_key_value_pairs=None):
         with CrossPlatLock(self._lock_location):
             if self._needs_refresh():
                 try:
@@ -362,18 +362,11 @@ class OSXTokenCache(msal.SerializableTokenCache):
                 except IOError as exp:
                     if exp.errno != errno.ENOENT:
                         raise exp
-            super(OSXTokenCache, self).update_rt(rt_item, new_rt)
-            self._write()
-
-    def remove_rt(self, rt_item):
-        with CrossPlatLock(self._lock_location):
-            if self._needs_refresh():
-                try:
-                    self._read()
-                except IOError as exp:
-                    if exp.errno != errno.ENOENT:
-                        raise exp
-            super(OSXTokenCache, self).remove_rt(rt_item)
+            super(OSXTokenCache, self).modify(
+                credential_type,
+                old_entry,
+                new_key_value_pairs=new_key_value_pairs,
+            )
             self._write()
 
     def find(self, credential_type, **kwargs):  # pylint: disable=arguments-differ

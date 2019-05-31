@@ -1,11 +1,7 @@
 """Implements a Windows Specific TokenCache, and provides auxiliary helper types."""
-import os
 import ctypes
 from ctypes import wintypes
-import time
-import errno
-import msal
-from .cache_lock import CrossPlatLock
+from .token_cache import FileTokenCache
 
 _LOCAL_FREE = ctypes.windll.kernel32.LocalFree
 _GET_LAST_ERROR = ctypes.windll.kernel32.GetLastError
@@ -116,79 +112,25 @@ class WindowsDataProtectionAgent(object):
         raise OSError(256, '', '', err_code)
 
 
-class WindowsTokenCache(msal.SerializableTokenCache):
+class WindowsTokenCache(FileTokenCache):
     """A SerializableTokenCache implementation which uses Win32 encryption APIs to protect your
     tokens.
     """
     def __init__(self,
-                 cache_location=os.path.join(
-                     os.getenv('LOCALAPPDATA', os.path.expanduser('~')),
-                     '.IdentityService',
-                     'msal.cache'),
+                 cache_location=None,
+                 lock_location=None,
                  entropy=''):
-        super(WindowsTokenCache, self).__init__()
-
-        self._cache_location = cache_location
-        self._lock_location = self._cache_location + '.lockfile'
+        super(WindowsTokenCache, self).__init__(
+            cache_location=cache_location,
+            lock_location=lock_location)
         self._dp_agent = WindowsDataProtectionAgent(entropy=entropy)
-        self._last_sync = 0  # _last_sync is a Unixtime
-
-    def _needs_refresh(self):
-        # type: () -> Bool
-        """
-        Inspects the file holding the encrypted TokenCache to see if a read is necessary.
-        :return: True if there are changes not reflected in memory, False otherwise.
-        """
-        try:
-            return self._last_sync < os.path.getmtime(self._cache_location)
-        except IOError as exp:
-            if exp.errno != errno.ENOENT:
-                raise exp
-            return False
-
-    def add(self, event, **kwargs):
-        with CrossPlatLock(self._lock_location):
-            if self._needs_refresh():
-                try:
-                    self._read()
-                except IOError as exp:
-                    if exp.errno != errno.ENOENT:
-                        raise exp
-            super(WindowsTokenCache, self).add(event, **kwargs)
-            self._write()
-
-    def modify(self, credential_type, old_entry, new_key_value_pairs=None):
-        with CrossPlatLock(self._lock_location):
-            if self._needs_refresh():
-                try:
-                    self._read()
-                except IOError as exp:
-                    if exp.errno != errno.ENOENT:
-                        raise exp
-            super(WindowsTokenCache, self).modify(
-                credential_type,
-                old_entry,
-                new_key_value_pairs=new_key_value_pairs)
-            self._write()
-
-    def find(self, credential_type, **kwargs):  # pylint: disable=arguments-differ
-        with CrossPlatLock(self._lock_location):
-            if self._needs_refresh():
-                try:
-                    self._read()
-                except IOError as exp:
-                    if exp.errno != errno.ENOENT:
-                        raise exp
-            return super(WindowsTokenCache, self).find(credential_type, **kwargs)
 
     def _write(self):
         with open(self._cache_location, 'wb') as handle:
             handle.write(self._dp_agent.protect(self.serialize()))
-        self._last_sync = int(time.time())
 
     def _read(self):
         with open(self._cache_location, 'rb') as handle:
             cipher_text = handle.read()
         contents = self._dp_agent.unprotect(cipher_text)
         self.deserialize(contents)
-        self._last_sync = int(time.time())

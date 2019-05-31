@@ -1,10 +1,10 @@
+# pylint: disable=duplicate-code
+
 """Implements a macOS specific TokenCache, and provides auxiliary helper types."""
+
 import os
 import ctypes as _ctypes
-import time
-import errno
-import msal
-from .cache_lock import CrossPlatLock
+from .token_cache import FileTokenCache
 
 OS_RESULT = _ctypes.c_int32
 
@@ -316,75 +316,26 @@ class Keychain(object):
         raise NotImplementedError()
 
 
-class OSXTokenCache(msal.SerializableTokenCache):
+class OSXTokenCache(FileTokenCache):
     """A SerializableTokenCache implementation which uses native Keychain libraries to protect your
     tokens.
     """
 
     def __init__(self,
+                 cache_location='~/.IdentityService/msal.cache',
+                 lock_location='None',
                  service_name='Microsoft.Developer.IdentityService',
-                 account_name='MSALCache',
-                 cache_location='~/.IdentityService/msal.cache'):
-        super(OSXTokenCache, self).__init__()
-
-        self._cache_location = os.path.expanduser(cache_location)
-        self._lock_location = self._cache_location + '.lockfile'
+                 account_name='MSALCache'):
+        super(OSXTokenCache, self).__init__(cache_location=cache_location,
+                                            lock_location=lock_location)
         self._service_name = service_name
         self._account_name = account_name
-        self._last_sync = 0
-
-    def _needs_refresh(self):
-        # type: () -> Bool
-        try:
-            return self._last_sync < os.path.getmtime(self._cache_location)
-        except IOError as exp:
-            if exp.errno != errno.ENOENT:
-                raise exp
-            return False
-
-    def add(self, event, **kwargs):
-        with CrossPlatLock(self._lock_location):
-            if self._needs_refresh():
-                try:
-                    self._read()
-                except IOError as exp:
-                    if exp.errno != errno.ENOENT:
-                        raise exp
-            super(OSXTokenCache, self).add(event, **kwargs)
-            self._write()
-
-    def modify(self, credential_type, old_entry, new_key_value_pairs=None):
-        with CrossPlatLock(self._lock_location):
-            if self._needs_refresh():
-                try:
-                    self._read()
-                except IOError as exp:
-                    if exp.errno != errno.ENOENT:
-                        raise exp
-            super(OSXTokenCache, self).modify(
-                credential_type,
-                old_entry,
-                new_key_value_pairs=new_key_value_pairs,
-            )
-            self._write()
-
-    def find(self, credential_type, **kwargs):  # pylint: disable=arguments-differ
-        with CrossPlatLock(self._lock_location):
-            if self._needs_refresh():
-                try:
-                    self._read()
-                except IOError as exp:
-                    if exp.errno != errno.ENOENT:
-                        raise exp
-            return super(OSXTokenCache, self).find(credential_type, **kwargs)
 
     def _read(self):
         with Keychain() as locker:
             contents = locker.get_generic_password(self._service_name, self._account_name)
         self.deserialize(contents)
-        self._last_sync = int(time.time())
 
     def _write(self):
         with Keychain() as locker:
             locker.set_generic_password(self._service_name, self._account_name, self.serialize())
-        self._last_sync = int(time.time())

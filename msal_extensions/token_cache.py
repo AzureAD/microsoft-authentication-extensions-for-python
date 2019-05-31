@@ -1,5 +1,10 @@
 """Generic functions and types for working with a TokenCache that is not platform specific."""
+import os
 import sys
+import time
+import errno
+import msal
+from .cache_lock import CrossPlatLock
 
 if sys.platform.startswith('win'):
     from .windows import WindowsTokenCache
@@ -27,3 +32,86 @@ def get_protected_token_cache(enforce_encryption=False, **kwargs):
         raise RuntimeError('no protected token cache for platform {}'.format(sys.platform))
 
     raise NotImplementedError('No fallback TokenCache is implemented yet.')
+
+
+class FileTokenCache(msal.SerializableTokenCache):
+    """Implements basic unprotected SerializableTokenCache to a plain-text file."""
+    def __init__(self,
+                 cache_location=os.path.join(
+                     os.getenv('LOCALAPPDATA', os.path.expanduser('~')),
+                     '.IdentityService',
+                     'msal.cache'),
+                 lock_location=None):
+        super(FileTokenCache, self).__init__()
+        self._cache_location = cache_location
+        self._lock_location = lock_location or self._cache_location + '.lockfile'
+        self._last_sync = 0  # _last_sync is a Unixtime
+
+    def _needs_refresh(self):
+        # type: () -> Bool
+        """
+        Inspects the file holding the encrypted TokenCache to see if a read is necessary.
+        :return: True if there are changes not reflected in memory, False otherwise.
+        """
+        try:
+            return self._last_sync < os.path.getmtime(self._cache_location)
+        except IOError as exp:
+            if exp.errno != errno.ENOENT:
+                raise exp
+            return False
+
+    def _write(self):
+        """Handles actually committing the serialized form of this TokenCache to persisted storage.
+        For types derived of this, class that will be a file, whcih has the ability to track a last
+        modified time.
+        """
+        with open(self._cache_location, 'wb') as handle:
+            handle.write(self.serialize())
+
+    def _read(self):
+        """Fetches the contents of a file and invokes deserialization."""
+        with open(self._cache_location, 'rb') as handle:
+            contents = handle.read()
+        self.deserialize(contents)
+
+    def add(self, event, **kwargs):
+        with CrossPlatLock(self._lock_location):
+            if self._needs_refresh():
+                try:
+                    self._read()
+                except IOError as exp:
+                    if exp.errno != errno.ENOENT:
+                        raise exp
+            super(FileTokenCache, self).add(event, **kwargs)  # pylint: disable=duplicate-code
+            self._write()
+
+    def modify(self, credential_type, old_entry, new_key_value_pairs=None):
+        with CrossPlatLock(self._lock_location):
+            if self._needs_refresh():
+                try:
+                    self._read()
+                except IOError as exp:
+                    if exp.errno != errno.ENOENT:
+                        raise exp
+            super(FileTokenCache, self).modify(
+                credential_type,
+                old_entry,
+                new_key_value_pairs=new_key_value_pairs)
+            self._write()
+
+    def find(self, credential_type, **kwargs):  # pylint: disable=arguments-differ
+        with CrossPlatLock(self._lock_location):
+            if self._needs_refresh():
+                try:
+                    self._read()
+                except IOError as exp:
+                    if exp.errno != errno.ENOENT:
+                        raise exp
+            return super(FileTokenCache, self).find(credential_type, **kwargs)
+
+    def __getattr__(self, item):
+        # Instead of relying on implementers remembering to update _last_sync, just detect that one
+        # of the relevant methods has been called take care of it for derived types.
+        if item in ['_read', '_write']:
+            self._last_sync = int(time.time())
+        return super(FileTokenCache, self).__getattr__(item)  # pylint: disable=no-member

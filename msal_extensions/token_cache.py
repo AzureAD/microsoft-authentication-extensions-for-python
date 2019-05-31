@@ -33,6 +33,7 @@ def get_protected_token_cache(enforce_encryption=False, **kwargs):
 
     raise NotImplementedError('No fallback TokenCache is implemented yet.')
 
+
 def _mkdir_p(path):
     """Creates a directory, and any necessary parents.
 

@@ -5,7 +5,8 @@ import msal
 if not sys.platform.startswith('darwin'):
     pytest.skip('skipping OSX-only tests', allow_module_level=True)
 else:
-    from msal_extensions.osx import KeychainItemNotFoundError, OSXTokenCache
+    from msal_extensions.osx import KeychainItemNotFoundError
+    from msal_extensions.token_cache import OSXTokenCache
 
 
 def test_read_cache():

@@ -4,7 +4,6 @@
 
 import os
 import ctypes as _ctypes
-from .token_cache import FileTokenCache
 
 OS_RESULT = _ctypes.c_int32
 
@@ -314,28 +313,3 @@ class Keychain(object):
         :param value: The password that should be associated with the given service and username.
         """
         raise NotImplementedError()
-
-
-class OSXTokenCache(FileTokenCache):
-    """A SerializableTokenCache implementation which uses native Keychain libraries to protect your
-    tokens.
-    """
-
-    def __init__(self,
-                 cache_location='~/.IdentityService/msal.cache',
-                 lock_location='None',
-                 service_name='Microsoft.Developer.IdentityService',
-                 account_name='MSALCache'):
-        super(OSXTokenCache, self).__init__(cache_location=cache_location,
-                                            lock_location=lock_location)
-        self._service_name = service_name
-        self._account_name = account_name
-
-    def _read(self):
-        with Keychain() as locker:
-            contents = locker.get_generic_password(self._service_name, self._account_name)
-        self.deserialize(contents)
-
-    def _write(self):
-        with Keychain() as locker:
-            locker.set_generic_password(self._service_name, self._account_name, self.serialize())

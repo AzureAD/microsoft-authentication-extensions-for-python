@@ -7,9 +7,9 @@ import msal
 from .cache_lock import CrossPlatLock
 
 if sys.platform.startswith('win'):
-    from .windows import WindowsTokenCache
+    from .windows import WindowsDataProtectionAgent
 elif sys.platform.startswith('darwin'):
-    from .osx import OSXTokenCache
+    from .osx import Keychain
 
 
 def get_protected_token_cache(enforce_encryption=False, **kwargs):
@@ -33,6 +33,23 @@ def get_protected_token_cache(enforce_encryption=False, **kwargs):
 
     raise NotImplementedError('No fallback TokenCache is implemented yet.')
 
+def _mkdir_p(path):
+    """Creates a directory, and any necessary parents.
+
+    This implementation based on a Stack Overflow question that can be found here:
+    https://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python
+
+    If the path provided is an existing file, this function raises an exception.
+    :param path: The directory name that should be created.
+    """
+    try:
+        os.mkdir(path)
+    except OSError as exp:
+        if exp.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+
 
 class FileTokenCache(msal.SerializableTokenCache):
     """Implements basic unprotected SerializableTokenCache to a plain-text file."""
@@ -46,6 +63,12 @@ class FileTokenCache(msal.SerializableTokenCache):
         self._cache_location = cache_location
         self._lock_location = lock_location or self._cache_location + '.lockfile'
         self._last_sync = 0  # _last_sync is a Unixtime
+
+        self._cache_location = os.path.expanduser(self._cache_location)
+        self._lock_location = os.path.expanduser(self._lock_location)
+
+        _mkdir_p(os.path.dirname(self._lock_location))
+        _mkdir_p(os.path.dirname(self._cache_location))
 
     def _needs_refresh(self):
         # type: () -> Bool
@@ -115,3 +138,52 @@ class FileTokenCache(msal.SerializableTokenCache):
         if item in ['_read', '_write']:
             self._last_sync = int(time.time())
         return super(FileTokenCache, self).__getattr__(item)  # pylint: disable=no-member
+
+
+class WindowsTokenCache(FileTokenCache):
+    """A SerializableTokenCache implementation which uses Win32 encryption APIs to protect your
+    tokens.
+    """
+    def __init__(self,
+                 cache_location=None,
+                 lock_location=None,
+                 entropy=''):
+        super(WindowsTokenCache, self).__init__(
+            cache_location=cache_location,
+            lock_location=lock_location)
+        self._dp_agent = WindowsDataProtectionAgent(entropy=entropy)
+
+    def _write(self):
+        with open(self._cache_location, 'wb') as handle:
+            handle.write(self._dp_agent.protect(self.serialize()))
+
+    def _read(self):
+        with open(self._cache_location, 'rb') as handle:
+            cipher_text = handle.read()
+        contents = self._dp_agent.unprotect(cipher_text)
+        self.deserialize(contents)
+
+
+class OSXTokenCache(FileTokenCache):
+    """A SerializableTokenCache implementation which uses native Keychain libraries to protect your
+    tokens.
+    """
+
+    def __init__(self,
+                 cache_location='~/.IdentityService/msal.cache',
+                 lock_location=None,
+                 service_name='Microsoft.Developer.IdentityService',
+                 account_name='MSALCache'):
+        super(OSXTokenCache, self).__init__(cache_location=cache_location,
+                                            lock_location=lock_location)
+        self._service_name = service_name
+        self._account_name = account_name
+
+    def _read(self):
+        with Keychain() as locker:
+            contents = locker.get_generic_password(self._service_name, self._account_name)
+        self.deserialize(contents)
+
+    def _write(self):
+        with Keychain() as locker:
+            locker.set_generic_password(self._service_name, self._account_name, self.serialize())

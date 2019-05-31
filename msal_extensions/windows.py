@@ -1,7 +1,6 @@
 """Implements a Windows Specific TokenCache, and provides auxiliary helper types."""
 import ctypes
 from ctypes import wintypes
-from .token_cache import FileTokenCache
 
 _LOCAL_FREE = ctypes.windll.kernel32.LocalFree
 _GET_LAST_ERROR = ctypes.windll.kernel32.GetLastError
@@ -110,27 +109,3 @@ class WindowsDataProtectionAgent(object):
                 _LOCAL_FREE(result.pbData)
         err_code = _GET_LAST_ERROR()
         raise OSError(256, '', '', err_code)
-
-
-class WindowsTokenCache(FileTokenCache):
-    """A SerializableTokenCache implementation which uses Win32 encryption APIs to protect your
-    tokens.
-    """
-    def __init__(self,
-                 cache_location=None,
-                 lock_location=None,
-                 entropy=''):
-        super(WindowsTokenCache, self).__init__(
-            cache_location=cache_location,
-            lock_location=lock_location)
-        self._dp_agent = WindowsDataProtectionAgent(entropy=entropy)
-
-    def _write(self):
-        with open(self._cache_location, 'wb') as handle:
-            handle.write(self._dp_agent.protect(self.serialize()))
-
-    def _read(self):
-        with open(self._cache_location, 'rb') as handle:
-            cipher_text = handle.read()
-        contents = self._dp_agent.unprotect(cipher_text)
-        self.deserialize(contents)

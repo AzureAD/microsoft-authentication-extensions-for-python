@@ -92,7 +92,7 @@ class FileTokenCache(msal.SerializableTokenCache):
 
     def _write(self):
         """Handles actually committing the serialized form of this TokenCache to persisted storage.
-        For types derived of this, class that will be a file, whcih has the ability to track a last
+        For types derived of this, class that will be a file, which has the ability to track a last
         modified time.
         """
         with open(self._cache_location, 'wb') as handle:

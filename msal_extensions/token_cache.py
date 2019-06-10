@@ -99,18 +99,14 @@ class FileTokenCache(msal.SerializableTokenCache):
 
         :param contents: The serialized contents of a TokenCache
         """
-        try:
-            with open(self._cache_location, 'wb') as handle:
-                handle.write(contents)
-        except IOError as exp:
-            if exp.errno != errno.ENOENT:
-                raise exp
+        with open(self._cache_location, 'w+') as handle:
+            handle.write(contents)
 
     def _read(self):
         # type: () -> str
         """Fetches the contents of a file and invokes deserialization."""
         try:
-            with open(self._cache_location, 'rs') as handle:
+            with open(self._cache_location, 'r') as handle:
                 return handle.read()
         except IOError as exp:
             if exp.errno != errno.ENOENT:

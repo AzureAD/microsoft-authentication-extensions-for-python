@@ -29,10 +29,14 @@ def get_protected_token_cache(
     :return: A fully instantiated TokenCache able to encrypt/decrypt tokens on the current system.
     """
     if sys.platform.startswith('win'):
-        return WindowsTokenCache(cache_location, lock_location, **kwargs)
+        return WindowsTokenCache(cache_location, # pylint: disable=too-many-function-args
+                                 lock_location,
+                                 **kwargs)
 
     if sys.platform.startswith('darwin'):
-        return OSXTokenCache(cache_location, lock_location, **kwargs)
+        return OSXTokenCache(cache_location, # pylint: disable=too-many-function-args
+                             lock_location,
+                             **kwargs)
 
     if enforce_encryption:
         raise RuntimeError('no protected token cache for platform {}'.format(sys.platform))

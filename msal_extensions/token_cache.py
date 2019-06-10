@@ -50,7 +50,7 @@ def _mkdir_p(path):
     :param path: The directory name that should be created.
     """
     try:
-        os.mkdir(path)
+        os.makedirs(path)
     except OSError as exp:
         if exp.errno == errno.EEXIST and os.path.isdir(path):
             pass

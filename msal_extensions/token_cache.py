@@ -84,67 +84,63 @@ class FileTokenCache(msal.SerializableTokenCache):
         :return: True if there are changes not reflected in memory, False otherwise.
         """
         try:
-            return self._last_sync < os.path.getmtime(self._cache_location)
+            updated = os.path.getmtime(self._cache_location)
+            return self._last_sync < updated
         except IOError as exp:
             if exp.errno != errno.ENOENT:
                 raise exp
             return False
 
-    def _write(self):
+    def _write(self, contents):
+        # type: (str) -> None
         """Handles actually committing the serialized form of this TokenCache to persisted storage.
         For types derived of this, class that will be a file, which has the ability to track a last
         modified time.
+
+        :param contents: The serialized contents of a TokenCache
         """
-        with open(self._cache_location, 'wb') as handle:
-            handle.write(self.serialize())
+        try:
+            with open(self._cache_location, 'wb') as handle:
+                handle.write(contents)
+        except IOError as exp:
+            if exp.errno != errno.ENOENT:
+                raise exp
 
     def _read(self):
+        # type: () -> str
         """Fetches the contents of a file and invokes deserialization."""
-        with open(self._cache_location, 'rb') as handle:
-            contents = handle.read()
-        self.deserialize(contents)
+        try:
+            with open(self._cache_location, 'rs') as handle:
+                return handle.read()
+        except IOError as exp:
+            if exp.errno != errno.ENOENT:
+                raise
 
     def add(self, event, **kwargs):
         with CrossPlatLock(self._lock_location):
             if self._needs_refresh():
-                try:
-                    self._read()
-                except IOError as exp:
-                    if exp.errno != errno.ENOENT:
-                        raise exp
+                self.deserialize(self._read())
             super(FileTokenCache, self).add(event, **kwargs)  # pylint: disable=duplicate-code
-            self._write()
+            self._write(self.serialize())
+            self._last_sync = os.path.getmtime(self._cache_location)
 
     def modify(self, credential_type, old_entry, new_key_value_pairs=None):
         with CrossPlatLock(self._lock_location):
             if self._needs_refresh():
-                try:
-                    self._read()
-                except IOError as exp:
-                    if exp.errno != errno.ENOENT:
-                        raise exp
+                self.deserialize(self._read())
             super(FileTokenCache, self).modify(
                 credential_type,
                 old_entry,
                 new_key_value_pairs=new_key_value_pairs)
-            self._write()
+            self._write(self.serialize())
+            self._last_sync = os.path.getmtime(self._cache_location)
 
     def find(self, credential_type, **kwargs):  # pylint: disable=arguments-differ
         with CrossPlatLock(self._lock_location):
             if self._needs_refresh():
-                try:
-                    self._read()
-                except IOError as exp:
-                    if exp.errno != errno.ENOENT:
-                        raise exp
+                self.deserialize(self._read())
+                self._last_sync = time.time()
             return super(FileTokenCache, self).find(credential_type, **kwargs)
-
-    def __getattr__(self, item):
-        # Instead of relying on implementers remembering to update _last_sync, just detect that one
-        # of the relevant methods has been called take care of it for derived types.
-        if item in ['_read', '_write']:
-            self._last_sync = int(time.time())
-        return super(FileTokenCache, self).__getattr__(item)  # pylint: disable=no-member
 
 
 class WindowsTokenCache(FileTokenCache):
@@ -160,15 +156,14 @@ class WindowsTokenCache(FileTokenCache):
             lock_location=lock_location)
         self._dp_agent = WindowsDataProtectionAgent(entropy=entropy)
 
-    def _write(self):
+    def _write(self, contents):
         with open(self._cache_location, 'wb') as handle:
-            handle.write(self._dp_agent.protect(self.serialize()))
+            handle.write(self._dp_agent.protect(contents))
 
     def _read(self):
         with open(self._cache_location, 'rb') as handle:
             cipher_text = handle.read()
-        contents = self._dp_agent.unprotect(cipher_text)
-        self.deserialize(contents)
+        return self._dp_agent.unprotect(cipher_text)
 
 
 class OSXTokenCache(FileTokenCache):
@@ -188,9 +183,10 @@ class OSXTokenCache(FileTokenCache):
 
     def _read(self):
         with Keychain() as locker:
-            contents = locker.get_generic_password(self._service_name, self._account_name)
-        self.deserialize(contents)
+            return locker.get_generic_password(self._service_name, self._account_name)
 
-    def _write(self):
+    def _write(self, contents):
         with Keychain() as locker:
-            locker.set_generic_password(self._service_name, self._account_name, self.serialize())
+            locker.set_generic_password(self._service_name, self._account_name, contents)
+            with open(self._cache_location, "w+") as handle:
+                handle.write('{} {}'.format(os.getpid(), sys.argv[0]))

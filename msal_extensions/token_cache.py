@@ -105,17 +105,17 @@ class FileTokenCache(msal.SerializableTokenCache):
     def _read(self):
         # type: () -> str
         """Fetches the contents of a file and invokes deserialization."""
-        try:
-            with open(self._cache_location, 'r') as handle:
-                return handle.read()
-        except IOError as exp:
-            if exp.errno != errno.ENOENT:
-                raise
+        with open(self._cache_location, 'r') as handle:
+            return handle.read()
 
     def add(self, event, **kwargs):
         with CrossPlatLock(self._lock_location):
             if self._needs_refresh():
-                self.deserialize(self._read())
+                try:
+                    self.deserialize(self._read())
+                except IOError as exp:
+                    if exp.errno != errno.ENOENT:
+                        raise
             super(FileTokenCache, self).add(event, **kwargs)  # pylint: disable=duplicate-code
             self._write(self.serialize())
             self._last_sync = os.path.getmtime(self._cache_location)
@@ -123,7 +123,11 @@ class FileTokenCache(msal.SerializableTokenCache):
     def modify(self, credential_type, old_entry, new_key_value_pairs=None):
         with CrossPlatLock(self._lock_location):
             if self._needs_refresh():
-                self.deserialize(self._read())
+                try:
+                    self.deserialize(self._read())
+                except IOError as exp:
+                    if exp.errno != errno.ENOENT:
+                        raise
             super(FileTokenCache, self).modify(
                 credential_type,
                 old_entry,
@@ -134,7 +138,11 @@ class FileTokenCache(msal.SerializableTokenCache):
     def find(self, credential_type, **kwargs):  # pylint: disable=arguments-differ
         with CrossPlatLock(self._lock_location):
             if self._needs_refresh():
-                self.deserialize(self._read())
+                try:
+                    self.deserialize(self._read())
+                except IOError as exp:
+                    if exp.errno != errno.ENOENT:
+                        raise
                 self._last_sync = time.time()
             return super(FileTokenCache, self).find(credential_type, **kwargs)
 

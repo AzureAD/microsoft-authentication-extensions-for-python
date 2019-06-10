@@ -147,13 +147,9 @@ class WindowsTokenCache(FileTokenCache):
     """A SerializableTokenCache implementation which uses Win32 encryption APIs to protect your
     tokens.
     """
-    def __init__(self,
-                 cache_location=None,
-                 lock_location=None,
-                 entropy=''):
-        super(WindowsTokenCache, self).__init__(
-            cache_location=cache_location,
-            lock_location=lock_location)
+    def __init__(self, entropy='', **kwargs):
+        super(WindowsTokenCache, self).__init__(**kwargs)
+        self._dp_agent = WindowsDataProtectionAgent(entropy=entropy)
         self._dp_agent = WindowsDataProtectionAgent(entropy=entropy)
 
     def _write(self, contents):
@@ -172,12 +168,10 @@ class OSXTokenCache(FileTokenCache):
     """
 
     def __init__(self,
-                 cache_location='~/.IdentityService/msal.cache',
-                 lock_location=None,
                  service_name='Microsoft.Developer.IdentityService',
-                 account_name='MSALCache'):
-        super(OSXTokenCache, self).__init__(cache_location=cache_location,
-                                            lock_location=lock_location)
+                 account_name='MSALCache',
+                 **kwargs):
+        super(OSXTokenCache, self).__init__(**kwargs)
         self._service_name = service_name
         self._account_name = account_name
 

@@ -27,8 +27,10 @@ class KeychainAccessDeniedError(KeychainError):
     has not been give permission to access it, and a query comes anyway."""
     EXIT_STATUS = -128
 
-    def __init__(self):
-        super(KeychainAccessDeniedError, self).__init__(KeychainAccessDeniedError.EXIT_STATUS)
+    def __init__(self, exit_status):
+        # Why bother passing in exit_status? See the conversation here: https://bit.ly/2XpfyD5
+        assert exit_status == KeychainAccessDeniedError.EXIT_STATUS
+        super(KeychainAccessDeniedError, self).__init__(exit_status=exit_status)
 
 
 class NoSuchKeychainError(KeychainError):
@@ -36,8 +38,10 @@ class NoSuchKeychainError(KeychainError):
     a query comes anyway."""
     EXIT_STATUS = -25294
 
-    def __init__(self, name):
-        super(NoSuchKeychainError, self).__init__(NoSuchKeychainError.EXIT_STATUS)
+    def __init__(self, exit_status, name):
+        # Why bother passing in exit_status? See the conversation here: https://bit.ly/2XpfyD5
+        assert exit_status == NoSuchKeychainError.EXIT_STATUS
+        super(NoSuchKeychainError, self).__init__(exit_status=exit_status)
         self.name = name
 
 
@@ -47,30 +51,31 @@ class NoDefaultKeychainError(KeychainError):
     """
     EXIT_STATUS = -25307
 
-    def __init__(self):
-        super(NoDefaultKeychainError, self).__init__(NoDefaultKeychainError.EXIT_STATUS)
+    def __init__(self, exit_status):
+        # Why bother passing in exit_status? See the conversation here: https://bit.ly/2XpfyD5
+        assert exit_status == NoDefaultKeychainError.EXIT_STATUS
+        super(NoDefaultKeychainError, self).__init__(exit_status=exit_status)
 
 
 class KeychainItemNotFoundError(KeychainError):
     """The exception that's raised when a non-exist Keychain entry is requested."""
     EXIT_STATUS = -25300
 
-    def __init__(self, service_name, account_name):
-        super(KeychainItemNotFoundError, self).__init__(KeychainItemNotFoundError.EXIT_STATUS)
+    def __init__(self, exit_status, service_name, account_name):
+        # Why bother passing in exit_status? See the conversation here: https://bit.ly/2XpfyD5
+        assert exit_status == KeychainItemNotFoundError.EXIT_STATUS
+        super(KeychainItemNotFoundError, self).__init__(exit_status=exit_status)
         self.service_name = service_name
         self.account_name = account_name
 
 
 def _construct_error(exit_status, **kwargs):
-    if exit_status == KeychainAccessDeniedError.EXIT_STATUS:
-        return KeychainAccessDeniedError()
-    if exit_status == NoSuchKeychainError.EXIT_STATUS:
-        return NoSuchKeychainError(**kwargs)
-    if exit_status == NoDefaultKeychainError.EXIT_STATUS:
-        return NoDefaultKeychainError()
-    if exit_status == KeychainItemNotFoundError.EXIT_STATUS:
-        return KeychainItemNotFoundError(**kwargs)
-    return KeychainError(exit_status)
+    return{
+        KeychainAccessDeniedError.EXIT_STATUS: KeychainAccessDeniedError,
+        NoSuchKeychainError.EXIT_STATUS: NoSuchKeychainError,
+        NoDefaultKeychainError.EXIT_STATUS: NoDefaultKeychainError,
+        KeychainItemNotFoundError.EXIT_STATUS: KeychainItemNotFoundError
+    }.get(exit_status, KeychainError)(exit_status, **kwargs)
 
 
 def _get_native_location(name):

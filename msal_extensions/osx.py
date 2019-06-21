@@ -89,12 +89,9 @@ def _get_native_location(name):
 
 
 # Load native MacOS libraries
-try:
-    _SECURITY = _ctypes.CDLL(_get_native_location('Security'))
-    _CORE = _ctypes.CDLL(_get_native_location('CoreFoundation'))
-except OSError:
-    _SECURITY = None
-    _CORE = None
+_SECURITY = _ctypes.CDLL(_get_native_location('Security'))
+_CORE = _ctypes.CDLL(_get_native_location('CoreFoundation'))
+
 
 # Bind CFRelease from native MacOS libraries.
 _CORE_RELEASE = _CORE.CFRelease

@@ -158,7 +158,6 @@ class WindowsTokenCache(FileTokenCache):
     def __init__(self, entropy='', **kwargs):
         super(WindowsTokenCache, self).__init__(**kwargs)
         self._dp_agent = WindowsDataProtectionAgent(entropy=entropy)
-        self._dp_agent = WindowsDataProtectionAgent(entropy=entropy)
 
     def _write(self, contents):
         with open(self._cache_location, 'wb') as handle:

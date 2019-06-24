@@ -9,8 +9,13 @@ OS_RESULT = _ctypes.c_int32
 
 
 class KeychainError(OSError):
-    """The parent of all exceptions that may be thrown by the functions implemented inside of the
-    Keychain type."""
+    """The RuntimeError that will be run when a function interacting with Keychain fails."""
+
+    ACCESS_DENIED = -128
+    NO_SUCH_KEYCHAIN = -25294
+    NO_DEFAULT = -25307
+    ITEM_NOT_FOUND = -25300
+
     def __init__(self, exit_status):
         super(KeychainError, self).__init__()
         self.exit_status = exit_status
@@ -20,63 +25,6 @@ class KeychainError(OSError):
             '{} ' \
             'see https://opensource.apple.com/source/CarbonHeaders/CarbonHeaders-18.1/MacErrors.h'\
                 .format(self.exit_status)
-
-
-class KeychainAccessDeniedError(KeychainError):
-    """The exceptions that's raised when a Keychain is set to be queried, but the current process
-    has not been give permission to access it, and a query comes anyway."""
-    EXIT_STATUS = -128
-
-    def __init__(self, exit_status):
-        # Why bother passing in exit_status? See the conversation here: https://bit.ly/2XpfyD5
-        assert exit_status == KeychainAccessDeniedError.EXIT_STATUS
-        super(KeychainAccessDeniedError, self).__init__(exit_status=exit_status)
-
-
-class NoSuchKeychainError(KeychainError):
-    """The exception that's raised when a Keychain is set to be queried, but it is non-existent, and
-    a query comes anyway."""
-    EXIT_STATUS = -25294
-
-    def __init__(self, exit_status, name):
-        # Why bother passing in exit_status? See the conversation here: https://bit.ly/2XpfyD5
-        assert exit_status == NoSuchKeychainError.EXIT_STATUS
-        super(NoSuchKeychainError, self).__init__(exit_status=exit_status)
-        self.name = name
-
-
-class NoDefaultKeychainError(KeychainError):
-    """The exception that's raised when no Keychain is set to be queried, but a query comes
-    anyway.
-    """
-    EXIT_STATUS = -25307
-
-    def __init__(self, exit_status):
-        # Why bother passing in exit_status? See the conversation here: https://bit.ly/2XpfyD5
-        assert exit_status == NoDefaultKeychainError.EXIT_STATUS
-        super(NoDefaultKeychainError, self).__init__(exit_status=exit_status)
-
-
-class KeychainItemNotFoundError(KeychainError):
-    """The exception that's raised when a non-exist Keychain entry is requested."""
-    EXIT_STATUS = -25300
-
-    def __init__(self, exit_status, service_name, account_name):
-        # Why bother passing in exit_status? See the conversation here: https://bit.ly/2XpfyD5
-        assert exit_status == KeychainItemNotFoundError.EXIT_STATUS
-        super(KeychainItemNotFoundError, self).__init__(exit_status=exit_status)
-        self.service_name = service_name
-        self.account_name = account_name
-
-
-def _construct_error(exit_status, **kwargs):
-    return{
-        KeychainAccessDeniedError.EXIT_STATUS: KeychainAccessDeniedError,
-        NoSuchKeychainError.EXIT_STATUS: NoSuchKeychainError,
-        NoDefaultKeychainError.EXIT_STATUS: NoDefaultKeychainError,
-        KeychainItemNotFoundError.EXIT_STATUS: KeychainItemNotFoundError
-    }.get(exit_status, KeychainError)(exit_status, **kwargs)
-
 
 def _get_native_location(name):
     # type: (str) -> str
@@ -226,10 +174,7 @@ class Keychain(object):
         )
 
         if exit_status:
-            raise _construct_error(
-                exit_status=exit_status,
-                service_name=service,
-                account_name=account_name)
+            raise KeychainError(exit_status=exit_status)
 
         value = _ctypes.create_string_buffer(length.value)
         _ctypes.memmove(value, contents.value, length.value)
@@ -268,12 +213,9 @@ class Keychain(object):
                 value,
             )
             if modify_exit_status:
-                raise _construct_error(
-                    modify_exit_status,
-                    service_name=service,
-                    account_name=account_name)
+                raise KeychainError(exit_status=modify_exit_status)
 
-        elif find_exit_status == KeychainItemNotFoundError.EXIT_STATUS:
+        elif find_exit_status == KeychainError.ITEM_NOT_FOUND:
             add_exit_status = _SECURITY_KEYCHAIN_ADD_GENERIC_PASSWORD(
                 self._ref,
                 len(service),
@@ -286,15 +228,9 @@ class Keychain(object):
             )
 
             if add_exit_status:
-                raise _construct_error(
-                    add_exit_status,
-                    service_name=service,
-                    account_name=account_name)
+                raise KeychainError(exit_status=add_exit_status)
         else:
-            raise _construct_error(
-                find_exit_status,
-                service_name=service,
-                account_name=account_name)
+            raise KeychainError(exit_status=find_exit_status)
 
     def get_internet_password(self, service, username):
         # type: (str, str) -> str

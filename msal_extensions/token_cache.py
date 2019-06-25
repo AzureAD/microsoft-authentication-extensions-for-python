@@ -1,6 +1,7 @@
 """Generic functions and types for working with a TokenCache that is not platform specific."""
 import os
 import sys
+import warnings
 import time
 import errno
 import msal
@@ -10,39 +11,6 @@ if sys.platform.startswith('win'):
     from .windows import WindowsDataProtectionAgent
 elif sys.platform.startswith('darwin'):
     from .osx import Keychain
-
-
-def get_protected_token_cache(
-        cache_location=None,
-        lock_location=None,
-        enforce_encryption=False, **kwargs):
-    """Detects the current system, and constructs a TokenCache of the appropriate type for the
-    environment in which it's running.
-
-    :param cache_location: The name of the file holding the serialized TokenCache.
-    :param lock_location: The file that should be used to ensure different TokenCache using
-    processes are not racing one another.
-    :param enforce_encryption: When 'True' an error will be raised if there isn't an encrypted
-    option available for the current system. When 'False', a plain-text option will be returned.
-    :param kwargs: Any options that should be passed to the platform-specific constructor of the
-    TokenCache being instantiated by this method.
-    :return: A fully instantiated TokenCache able to encrypt/decrypt tokens on the current system.
-    """
-    if sys.platform.startswith('win'):
-        return WindowsTokenCache(cache_location, # pylint: disable=too-many-function-args
-                                 lock_location,
-                                 **kwargs)
-
-    if sys.platform.startswith('darwin'):
-        return OSXTokenCache(cache_location, # pylint: disable=too-many-function-args
-                             lock_location,
-                             **kwargs)
-
-    if enforce_encryption:
-        raise RuntimeError('no protected token cache for platform {}'.format(sys.platform))
-
-    return FileTokenCache(cache_location, cache_location, **kwargs)
-
 
 def _mkdir_p(path):
     """Creates a directory, and any necessary parents.
@@ -149,6 +117,15 @@ class FileTokenCache(msal.SerializableTokenCache):
                         raise
                 self._last_sync = time.time()
             return super(FileTokenCache, self).find(credential_type, **kwargs)
+
+
+class UnencryptedTokenCache(FileTokenCache):
+    """An unprotected token cache to default to when no-platform specific option is available."""
+    def __init__(self, **kwargs):
+        warnings.warn("You are using an unprotected token cache, "
+                      "because an encrypted option is not available for {}".format(sys.platform),
+                      RuntimeWarning)
+        super(UnencryptedTokenCache, self).__init__(**kwargs)
 
 
 class WindowsTokenCache(FileTokenCache):

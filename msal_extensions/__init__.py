@@ -1,4 +1,11 @@
 """Provides auxiliary functionality to the `msal` package."""
 __version__ = "0.0.1"
 
-from .token_cache import get_protected_token_cache
+import sys
+
+if sys.platform.startswith('win'):
+    from .token_cache import WindowsTokenCache as TokenCache
+elif sys.platform.startswith('darwin'):
+    from .token_cache import OSXTokenCache as TokenCache
+else:
+    from .token_cache import UnencryptedTokenCache as TokenCache

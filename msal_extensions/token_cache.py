@@ -33,10 +33,7 @@ def _mkdir_p(path):
 class FileTokenCache(msal.SerializableTokenCache):
     """Implements basic unprotected SerializableTokenCache to a plain-text file."""
     def __init__(self,
-                 cache_location=os.path.join(
-                     os.getenv('LOCALAPPDATA', os.path.expanduser('~')),
-                     '.IdentityService',
-                     'msal.cache'),
+                 cache_location,
                  lock_location=None):
         super(FileTokenCache, self).__init__()
         self._cache_location = cache_location
@@ -121,19 +118,19 @@ class FileTokenCache(msal.SerializableTokenCache):
 
 class UnencryptedTokenCache(FileTokenCache):
     """An unprotected token cache to default to when no-platform specific option is available."""
-    def __init__(self, **kwargs):
+    def __init__(self, cache_location, **kwargs):
         warnings.warn("You are using an unprotected token cache, "
                       "because an encrypted option is not available for {}".format(sys.platform),
                       RuntimeWarning)
-        super(UnencryptedTokenCache, self).__init__(**kwargs)
+        super(UnencryptedTokenCache, self).__init__(cache_location, **kwargs)
 
 
 class WindowsTokenCache(FileTokenCache):
     """A SerializableTokenCache implementation which uses Win32 encryption APIs to protect your
     tokens.
     """
-    def __init__(self, entropy='', **kwargs):
-        super(WindowsTokenCache, self).__init__(**kwargs)
+    def __init__(self, cache_location, entropy='', **kwargs):
+        super(WindowsTokenCache, self).__init__(cache_location, **kwargs)
         self._dp_agent = WindowsDataProtectionAgent(entropy=entropy)
 
     def _write(self, contents):
@@ -152,10 +149,11 @@ class OSXTokenCache(FileTokenCache):
     """
 
     def __init__(self,
+                 cache_location,
                  service_name='Microsoft.Developer.IdentityService',
                  account_name='MSALCache',
                  **kwargs):
-        super(OSXTokenCache, self).__init__(**kwargs)
+        super(OSXTokenCache, self).__init__(cache_location, **kwargs)
         self._service_name = service_name
         self._account_name = account_name
 

@@ -19,6 +19,7 @@ matrix:
     - name: "Python 3.7 on macOS"
       env: TOXENV=py37
       os: osx
+      if: branch = mandatory_cache_location
       osx_image: xcode10.2
       language: shell
     - name: "Python 2.7 on Windows"

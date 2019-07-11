@@ -298,6 +298,10 @@ paket-files/
 __pycache__/
 *.pyc
 
+# Python Auxiliary Tools
+*.egg-info/
+.tox/
+
 # Cake - Uncomment if you are using it
 # tools/**
 # !tools/packages.config

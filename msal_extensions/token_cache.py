@@ -77,18 +77,6 @@ class FileTokenCache(msal.SerializableTokenCache):
         with open(self._cache_location, 'r') as handle:
             return handle.read()
 
-    def add(self, event, **kwargs):
-        with CrossPlatLock(self._lock_location):
-            if self._needs_refresh():
-                try:
-                    self.deserialize(self._read())
-                except IOError as exp:
-                    if exp.errno != errno.ENOENT:
-                        raise
-            super(FileTokenCache, self).add(event, **kwargs)  # pylint: disable=duplicate-code
-            self._write(self.serialize())
-            self._last_sync = os.path.getmtime(self._cache_location)
-
     def modify(self, credential_type, old_entry, new_key_value_pairs=None):
         with CrossPlatLock(self._lock_location):
             if self._needs_refresh():

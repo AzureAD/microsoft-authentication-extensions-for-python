@@ -16,7 +16,7 @@ setup(
         'Development Status :: 2 - Pre-Alpha',
     ],
     install_requires=[
-        'msal>=0.4.1,<0.6.0',
+        'msal>=0.4.1,<1.0.0',
         'portalocker~=1.0',
     ],
     tests_require=['pytest'],

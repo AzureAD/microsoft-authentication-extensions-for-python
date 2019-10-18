@@ -16,6 +16,10 @@ matrix:
       env: TOXENV=py37
       os: linux
       dist: xenial
+    - python: "3.8"
+      env: TOXENV=py38
+      os: linux
+      dist: xenial
     - name: "Python 3.7 on macOS"
       env: TOXENV=py37
       os: osx

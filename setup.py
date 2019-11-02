@@ -15,8 +15,9 @@ setup(
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
     ],
+    package_data={'': ['LICENSE']},
     install_requires=[
-        'msal>=0.4.1,<1.0.0',
+        'msal>=0.4.1,<2.0.0',
         'portalocker~=1.0',
     ],
     tests_require=['pytest'],

@@ -19,6 +19,8 @@ setup(
     install_requires=[
         'msal>=0.4.1,<2.0.0',
         'portalocker~=1.0',
+        # Skip pywin32 226 release. See https://github.com/mhammond/pywin32/issues/1439
+        'pywin32<=225; platform_system == "Windows"',
     ],
     tests_require=['pytest'],
 )

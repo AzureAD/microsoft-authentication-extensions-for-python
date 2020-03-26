@@ -19,6 +19,7 @@ setup(
     install_requires=[
         'msal>=0.4.1,<2.0.0',
         'portalocker~=1.6',
+        "pygobject>=3,<4;platform_system=='Linux'",
     ],
     tests_require=['pytest'],
 )

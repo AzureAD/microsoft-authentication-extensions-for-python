@@ -1,3 +1,4 @@
 [MESSAGES CONTROL]
 disable=
+    trailing-newlines,
     useless-object-inheritance

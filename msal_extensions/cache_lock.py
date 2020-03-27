@@ -22,6 +22,7 @@ class CrossPlatLock(object):
         self._fh.write('{} {}'.format(pid, sys.argv[0]).encode('utf-8'))
 
     def __exit__(self, *args):
+        portalocker.unlock(self._fh)
         self._fh.close()
         try:
             # Attempt to delete the lockfile. In either of the failure cases enumerated below, it is

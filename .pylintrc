@@ -1,4 +1,6 @@
 [MESSAGES CONTROL]
+good-names=
+    logger
 disable=
     trailing-newlines,
     useless-object-inheritance

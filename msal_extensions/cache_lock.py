@@ -16,9 +16,9 @@ class CrossPlatLock(object):
                                       flags=portalocker.LOCK_EX, buffering=0)
 
     def __enter__(self):
-        fh = self._lock.__enter__()
-        fh.write('{} {}'.format(os.getpid(), sys.argv[0]).encode('utf-8'))
-        return fh
+        file_handle = self._lock.__enter__()
+        file_handle.write('{} {}'.format(os.getpid(), sys.argv[0]).encode('utf-8'))
+        return file_handle
 
     def __exit__(self, *args):
         self._lock.__exit__(*args)

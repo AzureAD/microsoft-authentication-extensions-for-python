@@ -12,18 +12,16 @@ class CrossPlatLock(object):
     """
     def __init__(self, lockfile_path):
         self._lockpath = lockfile_path
-        self._fh = None
+        self._lock = portalocker.Lock(lockfile_path, mode='wb+',
+                                      flags=portalocker.LOCK_EX, buffering=0)
 
     def __enter__(self):
-        pid = os.getpid()
-
-        self._fh = open(self._lockpath, 'wb+', buffering=0)
-        portalocker.lock(self._fh, portalocker.LOCK_EX)
-        self._fh.write('{} {}'.format(pid, sys.argv[0]).encode('utf-8'))
+        fh = self._lock.__enter__()
+        fh.write('{} {}'.format(os.getpid(), sys.argv[0]).encode('utf-8'))
+        return fh
 
     def __exit__(self, *args):
-        portalocker.unlock(self._fh)
-        self._fh.close()
+        self._lock.__exit__(*args)
         try:
             # Attempt to delete the lockfile. In either of the failure cases enumerated below, it is
             # likely that another process has raced this one and ended up clearing or locking the

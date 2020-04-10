@@ -12,8 +12,14 @@ class CrossPlatLock(object):
     """
     def __init__(self, lockfile_path):
         self._lockpath = lockfile_path
-        self._lock = portalocker.Lock(lockfile_path, mode='wb+',
-                                      flags=portalocker.LOCK_EX, buffering=0)
+        self._lock = portalocker.Lock(
+            lockfile_path,
+            mode='wb+',
+            # In posix systems, we HAVE to use LOCK_EX(exclusive lock) bitwise ORed
+            # with LOCK_NB(non-blocking) to avoid blocking on lock acquisition.
+            # More information on this here: https://docs.python.org/3/library/fcntl.html#fcntl.lockf
+            flags=portalocker.LOCK_EX | portalocker.LOCK_NB,
+            buffering=0)
 
     def __enter__(self):
         file_handle = self._lock.__enter__()

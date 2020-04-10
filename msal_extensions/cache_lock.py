@@ -17,7 +17,8 @@ class CrossPlatLock(object):
             mode='wb+',
             # In posix systems, we HAVE to use LOCK_EX(exclusive lock) bitwise ORed
             # with LOCK_NB(non-blocking) to avoid blocking on lock acquisition.
-            # More information here: https://docs.python.org/3/library/fcntl.html#fcntl.lockf
+            # More information here:
+            # https://docs.python.org/3/library/fcntl.html#fcntl.lockf
             flags=portalocker.LOCK_EX | portalocker.LOCK_NB,
             buffering=0)
 

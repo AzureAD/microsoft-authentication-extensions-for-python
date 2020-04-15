@@ -6,20 +6,35 @@ matrix:
     - python: "2.7"
       env: TOXENV=py27 PYPI=true
       os: linux
+      before_install:
+        - sudo apt update
+        - sudo apt install python-dev libgirepository1.0-dev libcairo2-dev gir1.2-secret-1
     - python: "3.5"
       env: TOXENV=py35
       os: linux
+      before_install:
+        - sudo apt update
+        - sudo apt install python3-dev libgirepository1.0-dev libcairo2-dev gir1.2-secret-1
     - python: "3.6"
       env: TOXENV=py36
       os: linux
+      before_install:
+        - sudo apt update
+        - sudo apt install python3-dev libgirepository1.0-dev libcairo2-dev gir1.2-secret-1
     - python: "3.7"
       env: TOXENV=py37
       os: linux
       dist: xenial
+      before_install:
+        - sudo apt update
+        - sudo apt install python3-dev libgirepository1.0-dev libcairo2-dev gir1.2-secret-1
     - python: "3.8"
       env: TOXENV=py38
       os: linux
       dist: xenial
+      before_install:
+        - sudo apt update
+        - sudo apt install python3-dev libgirepository1.0-dev libcairo2-dev gir1.2-secret-1
     - name: "Python 3.7 on macOS"
       env: TOXENV=py37
       os: osx
@@ -46,7 +61,8 @@ install:
   - pip install .
 
 script:
-  - pylint msal_extensions
+  - # Difficult to get .pylintrc working on both Python 2 & 3, and we don't have to
+  - if [ "$TOXENV" = "py37"]; then pylint msal_extensions; fi
   - tox
 
 deploy:

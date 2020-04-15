@@ -12,22 +12,28 @@ class CrossPlatLock(object):
     """
     def __init__(self, lockfile_path):
         self._lockpath = lockfile_path
-        self._fh = None
+        self._lock = portalocker.Lock(
+            lockfile_path,
+            mode='wb+',
+            # In posix systems, we HAVE to use LOCK_EX(exclusive lock) bitwise ORed
+            # with LOCK_NB(non-blocking) to avoid blocking on lock acquisition.
+            # More information here:
+            # https://docs.python.org/3/library/fcntl.html#fcntl.lockf
+            flags=portalocker.LOCK_EX | portalocker.LOCK_NB,
+            buffering=0)
 
     def __enter__(self):
-        pid = os.getpid()
-
-        self._fh = open(self._lockpath, 'wb+', buffering=0)
-        portalocker.lock(self._fh, portalocker.LOCK_EX)
-        self._fh.write('{} {}'.format(pid, sys.argv[0]).encode('utf-8'))
+        file_handle = self._lock.__enter__()
+        file_handle.write('{} {}'.format(os.getpid(), sys.argv[0]).encode('utf-8'))
+        return file_handle
 
     def __exit__(self, *args):
-        self._fh.close()
+        self._lock.__exit__(*args)
         try:
             # Attempt to delete the lockfile. In either of the failure cases enumerated below, it is
             # likely that another process has raced this one and ended up clearing or locking the
             # file for itself.
             os.remove(self._lockpath)
-        except OSError as ex:
+        except OSError as ex:  # pylint: disable=invalid-name
             if ex.errno != errno.ENOENT and ex.errno != errno.EACCES:
                 raise

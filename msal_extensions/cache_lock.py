@@ -34,6 +34,6 @@ class CrossPlatLock(object):
             # likely that another process has raced this one and ended up clearing or locking the
             # file for itself.
             os.remove(self._lockpath)
-        except OSError as ex:
+        except OSError as ex:  # pylint: disable=invalid-name
             if ex.errno != errno.ENOENT and ex.errno != errno.EACCES:
                 raise

@@ -12,6 +12,8 @@ setup(
     name='msal-extensions',
     version=__version__,
     packages=find_packages(),
+    long_description=open('README.md').read(),
+    long_description_content_type="text/markdown",    
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
     ],

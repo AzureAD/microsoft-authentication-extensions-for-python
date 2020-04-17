@@ -15,15 +15,31 @@ Alternatively, you could skip Cairo & PyCairo, but you still need to do all thes
 """
 import logging
 
-import gi  # https://pygobject.readthedocs.io/en/latest/getting_started.html
-
-# pylint: disable=no-name-in-module
-gi.require_version("Secret", "1")  # Would require a package gir1.2-secret-1
-# pylint: disable=wrong-import-position
-from gi.repository import Secret  # Would require a package gir1.2-secret-1
-
-
 logger = logging.getLogger(__name__)
+
+try:
+    import gi  # https://github.com/AzureAD/microsoft-authentication-extensions-for-python/wiki/Encryption-on-Linux
+except ImportError:
+    logger.exception(
+        """Runtime dependency of PyGObject is missing.
+Depends on your Linux distro, you could install it system-wide by something like:
+    sudo apt install python3-gi python3-gi-cairo gir1.2-secret-1
+If necessary, please refer to PyGObject's doc:
+https://pygobject.readthedocs.io/en/latest/getting_started.html
+""")
+    raise
+
+try:
+    # pylint: disable=no-name-in-module
+    gi.require_version("Secret", "1")  # Would require a package gir1.2-secret-1
+    # pylint: disable=wrong-import-position
+    from gi.repository import Secret  # Would require a package gir1.2-secret-1
+except (ValueError, ImportError):
+    logger.exception(
+        """Require a package "gir1.2-secret-1" which could be installed by:
+        sudo apt install gir1.2-secret-1
+        """)
+    raise
 
 class LibSecretAgent(object):
     """A loader/saver built on top of low-level libsecret"""
@@ -111,9 +127,12 @@ def trial_run():
         assert agent.load() == payload  # This line is probably not reachable
         agent.clear()
     except (gi.repository.GLib.Error, AssertionError):
-        message = (
-            "libsecret did not perform properly. Please refer to "
-            "https://github.com/AzureAD/microsoft-authentication-extensions-for-python/wiki/Encryption-on-Linux")  # pylint: disable=line-too-long
+        message = """libsecret did not perform properly.
+* If you encountered error "Remote error from secret service:
+  org.freedesktop.DBus.Error.ServiceUnknown",
+  you may need to install gnome-keyring package.
+* Headless mode (such as in an ssh session) is not supported.
+"""
         logger.exception(message)  # This log contains trace stack for debugging
         logger.warning(message)  # This is visible by default
         raise

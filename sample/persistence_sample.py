@@ -27,10 +27,10 @@ def build_persistence(location, fallback_to_plaintext=False):
         except:  # pylint: disable=bare-except
             if not fallback_to_plaintext:
                 raise
-            logging.exception("Encryption unavailable. Opting in to plain text.")
+            logging.warning("Encryption unavailable. Opting in to plain text.")
     return FilePersistence(location)
 
-persistence = build_persistence("storage.bin")
+persistence = build_persistence("storage.bin", fallback_to_plaintext=False)
 print("Is this persistence encrypted?", persistence.is_encrypted)
 
 data = {  # It can be anything, here we demonstrate an arbitrary json object

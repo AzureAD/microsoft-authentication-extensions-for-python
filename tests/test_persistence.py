@@ -30,7 +30,7 @@ def test_file_persistence(temp_location):
     _test_persistence_roundtrip(FilePersistence(temp_location))
 
 @pytest.mark.skipif(
-    is_running_on_travis_ci or not sys.platform.startswith('win'),
+    not sys.platform.startswith('win'),
     reason="Requires Windows Desktop")
 def test_file_persistence_with_data_protection(temp_location):
     _test_persistence_roundtrip(FilePersistenceWithDataProtection(temp_location))

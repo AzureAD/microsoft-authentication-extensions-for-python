@@ -9,11 +9,11 @@ app developer would naturally know whether the data are protected by encryption.
 import abc
 import os
 import errno
+
 try:
     from pathlib import Path  # Built-in in Python 3
 except:
     from pathlib2 import Path  # An extra lib for Python 2
-
 
 try:
     ABC = abc.ABC
@@ -114,12 +114,13 @@ class FilePersistenceWithDataProtection(FilePersistence):
         super(FilePersistenceWithDataProtection, self).__init__(location)
 
     def save(self, content):
-        super(FilePersistenceWithDataProtection, self).save(
-            self._dp_agent.protect(content))
+        with open(self._location, 'wb+') as handle:
+            handle.write(self._dp_agent.protect(content))
 
     def load(self):
-        return self._dp_agent.unprotect(
-            super(FilePersistenceWithDataProtection, self).load())
+        with open(self._location, 'rb') as handle:
+            return self._dp_agent.unprotect(
+                handle.read())
 
 
 class KeychainPersistence(BasePersistence):

@@ -9,11 +9,11 @@ app developer would naturally know whether the data are protected by encryption.
 import abc
 import os
 import errno
-
 try:
     from pathlib import Path  # Built-in in Python 3
 except:
     from pathlib2 import Path  # An extra lib for Python 2
+
 
 try:
     ABC = abc.ABC

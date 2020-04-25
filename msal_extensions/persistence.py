@@ -114,12 +114,14 @@ class FilePersistenceWithDataProtection(FilePersistence):
         super(FilePersistenceWithDataProtection, self).__init__(location)
 
     def save(self, content):
-        super(FilePersistenceWithDataProtection, self).save(
-            self._dp_agent.protect(content))
+        # type: (str) -> None
+        with open(self._location, 'wb+') as handle:
+            handle.write(self._dp_agent.protect(content))
 
     def load(self):
-        return self._dp_agent.unprotect(
-            super(FilePersistenceWithDataProtection, self).load())
+        # type: () -> str
+        with open(self._location, 'rb') as handle:
+            return self._dp_agent.unprotect(handle.read())
 
 
 class KeychainPersistence(BasePersistence):

@@ -3,6 +3,7 @@ import os
 import sys
 import errno
 import portalocker
+from distutils.version import LooseVersion
 
 
 class CrossPlatLock(object):
@@ -12,6 +13,8 @@ class CrossPlatLock(object):
     """
     def __init__(self, lockfile_path):
         self._lockpath = lockfile_path
+        # Support for passing through arguments to the open syscall was added in v1.4.0
+        open_kwargs = {'buffering': 0} if LooseVersion(portalocker.__version__) >= LooseVersion("1.4.0") else {}
         self._lock = portalocker.Lock(
             lockfile_path,
             mode='wb+',
@@ -20,7 +23,7 @@ class CrossPlatLock(object):
             # More information here:
             # https://docs.python.org/3/library/fcntl.html#fcntl.lockf
             flags=portalocker.LOCK_EX | portalocker.LOCK_NB,
-            buffering=0)
+            **open_kwargs)
 
     def __enter__(self):
         file_handle = self._lock.__enter__()

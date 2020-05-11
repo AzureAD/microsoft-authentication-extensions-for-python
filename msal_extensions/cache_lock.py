@@ -2,6 +2,7 @@
 import os
 import sys
 import errno
+import time
 import portalocker
 
 
@@ -10,8 +11,9 @@ class CrossPlatLock(object):
     resource. This is specifically written to interact with a class of the same name in the .NET
     extensions library.
     """
-    def __init__(self, lockfile_path):
+    def __init__(self, lockfile_path, time_interval_file_path):
         self._lockpath = lockfile_path
+        self.time_interval_file_path = time_interval_file_path
         self._lock = portalocker.Lock(
             lockfile_path,
             mode='wb+',
@@ -20,15 +22,19 @@ class CrossPlatLock(object):
             # More information here:
             # https://docs.python.org/3/library/fcntl.html#fcntl.lockf
             flags=portalocker.LOCK_EX | portalocker.LOCK_NB,
+            timeout=90,
             buffering=0)
 
     def __enter__(self):
+        self.start_time = str(time.time())
         file_handle = self._lock.__enter__()
         file_handle.write('{} {}'.format(os.getpid(), sys.argv[0]).encode('utf-8'))
         return file_handle
 
     def __exit__(self, *args):
         self._lock.__exit__(*args)
+        with open(self.time_interval_file_path, 'a+') as handle:
+            handle.write(self.start_time + "-" + str(time.time())+ "\n")
         try:
             # Attempt to delete the lockfile. In either of the failure cases enumerated below, it is
             # likely that another process has raced this one and ended up clearing or locking the

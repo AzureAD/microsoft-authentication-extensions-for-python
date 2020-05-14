@@ -56,3 +56,4 @@ def test_multiple_process():
     for i in processes:
         i.join()
     _validate_result_in_cache(num_of_processes, cache_location)
+    os.remove(cache_location)

@@ -1,100 +1,53 @@
 import multiprocessing
-import threading
+import os
 import time
+
 from msal_extensions import FilePersistence, CrossPlatLock
 
 
-def validate_thread_locking_file(num):
-    with open("C:/Users/abpati/Desktop/test/lockfilelog.txt") as handle:
+def _validate_result_in_cache(expected_entry_count, cache_location):
+    with open(cache_location) as handle:
         data = handle.read()
-    time_list = []
-    for line in data.split("\n"):
-        start, end = line.split("-")
-        time_list.append([start, end])
-    if len(time_list) != num:
-        print("Threads count dont match ")
-        return
-    time_list.sort()
-    prev = None
-    for interval in time_list:
-        start, end = interval
-        if start > end:
-            print("Intervals start bigger than end")
-            return
-        if prev:
-            if start < prev:
-                print("overlapping")
-        prev = start
-    print("success")
-    return
-
-
-def validate_result_in_cache(num):
-    with open("C:/Users/abpati/Desktop/test/msal.cache") as handle:
-        data = handle.read()
-    prev_tag= None
-    prev_proc_id = None
+    prev_process_id = None
     count = 0
     for line in data.split(("\n")):
-        tag, proc_id = line.split(" ")
-        if tag == '<':
-            if '<' == prev_tag:
-                print("Failed")
-                return
-        elif tag == '>':
-            count+=1
-            if '<' != prev_tag or (not prev_proc_id == proc_id):
-                print("Failed")
-                return
-        else:
-            print("Unexpected Token")
-        prev_proc_id = proc_id
-        prev_tag = tag
-    if ">" != prev_tag:
-        print("Failed")
-        return
-    if count != num:
-        print("Failed")
-        return
-    print("sucess")
+        if line:
+            count += 1
+            tag, process_id = line.split(" ")
+            if prev_process_id is not None:
+                assert process_id == prev_process_id, "Process overlap found"
+                assert tag == '>', "Process overlap_found"
+                prev_process_id = None
+            else:
+                assert tag == '<', "Opening bracket not found"
+                prev_process_id = process_id
+
+    assert count == expected_entry_count*2, "No of processes don't match"
 
 
-def do_something(tid):
-    lock_intervals_file_path = "C:/Users/abpati/Desktop/test/lockfilelog.txt"
-    lock_file_path = "C:/Users/abpati/Desktop/test/msal.cache.lockfile"
-    cache_accessor = FilePersistence("C:/Users/abpati/Desktop/test/msal.cache")
-    with CrossPlatLock(lock_file_path, lock_intervals_file_path):
-        thr = str(tid)
+def _acquire_lock_and_write_to_cache(cache_location, sleep_interval=1):
+    cache_accessor = FilePersistence(cache_location)
+    lock_file_path = cache_accessor.get_location() + ".lockfile"
+    with CrossPlatLock(lock_file_path, timeout=90):
         data = cache_accessor.load()
         if data is None:
             data = ""
-        data += "< " + thr + "\n"
-        time.sleep(0.1)
-        data += "> " + thr + "\n"
+        data += "< " + str(os.getpid()) + "\n"
+        time.sleep(sleep_interval)
+        data += "> " + str(os.getpid()) + "\n"
         cache_accessor.save(data)
 
 
-def multiple_threads():
-    threads = []
-    num_of_threads = 30
-    for i in range(num_of_threads):
-        t = threading.Thread(target=do_something, args=(i,))
-        threads.append(t)
-
-    for i in threads:
-        i.start()
-
-    for i in threads:
-        i.join()
-    validate_thread_locking_file(num_of_threads)
-    validate_result_in_cache(num_of_threads)
-
-
-def multiple_process():
+def test_multiple_process():
+    path_to_script = os.path.dirname(os.path.abspath(__file__))
+    cache_location = os.path.join(path_to_script, "msal.cache")
+    open(cache_location, "w+")
     processes = []
-    num_of_processes = 20
+    num_of_processes = 5
     for i in range(num_of_processes):
-        t = multiprocessing.Process(target=do_something, args=(i,))
+        t = multiprocessing.Process(
+            target=_acquire_lock_and_write_to_cache,
+            args=(cache_location,))
         processes.append(t)
 
     for i in processes:
@@ -102,9 +55,4 @@ def multiple_process():
 
     for i in processes:
         i.join()
-    validate_thread_locking_file(num_of_processes)
-    validate_result_in_cache(num_of_processes)
-
-
-multiple_threads()
-multiple_process()
+    _validate_result_in_cache(num_of_processes, cache_location)

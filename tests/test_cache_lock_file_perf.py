@@ -2,7 +2,15 @@ import multiprocessing
 import os
 import time
 
+import pytest
+
 from msal_extensions import FilePersistence, CrossPlatLock
+
+
+@pytest.fixture
+def cache_location():
+    path_to_script = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(path_to_script, "msal.cache")
 
 
 def _validate_result_in_cache(expected_entry_count, cache_location):
@@ -28,7 +36,7 @@ def _validate_result_in_cache(expected_entry_count, cache_location):
 def _acquire_lock_and_write_to_cache(cache_location, sleep_interval=1):
     cache_accessor = FilePersistence(cache_location)
     lock_file_path = cache_accessor.get_location() + ".lockfile"
-    with CrossPlatLock(lock_file_path, timeout=90):
+    with CrossPlatLock(lock_file_path):
         data = cache_accessor.load()
         if data is None:
             data = ""
@@ -38,16 +46,13 @@ def _acquire_lock_and_write_to_cache(cache_location, sleep_interval=1):
         cache_accessor.save(data)
 
 
-def test_multiple_process():
-    path_to_script = os.path.dirname(os.path.abspath(__file__))
-    cache_location = os.path.join(path_to_script, "msal.cache")
+def _run_multiple_processes(no_of_processes, cache_location, sleep_interval):
     open(cache_location, "w+")
     processes = []
-    num_of_processes = 5
-    for i in range(num_of_processes):
+    for i in range(no_of_processes):
         t = multiprocessing.Process(
             target=_acquire_lock_and_write_to_cache,
-            args=(cache_location,))
+            args=(cache_location, sleep_interval))
         processes.append(t)
 
     for i in processes:
@@ -55,5 +60,21 @@ def test_multiple_process():
 
     for i in processes:
         i.join()
+
+
+def test_multiple_processes_without_timeout_exception(cache_location):
+    num_of_processes = 20
+    sleep_interval = 0
+    _run_multiple_processes(num_of_processes, cache_location, sleep_interval)
     _validate_result_in_cache(num_of_processes, cache_location)
     os.remove(cache_location)
+
+
+def test_multiple_processes_with_timeout_exception_raised(cache_location):
+    num_of_processes = 6
+    sleep_interval = 1
+    with pytest.raises(Exception):
+        assert _run_multiple_processes(
+            num_of_processes, cache_location, sleep_interval)
+    os.remove(cache_location)
+

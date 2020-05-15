@@ -33,7 +33,7 @@ def _validate_result_in_cache(expected_entry_count, cache_location):
     assert count == expected_entry_count*2, "No of processes don't match"
 
 
-def _acquire_lock_and_write_to_cache(cache_location, sleep_interval=1):
+def _acquire_lock_and_write_to_cache(cache_location, sleep_interval=0):
     cache_accessor = FilePersistence(cache_location)
     lock_file_path = cache_accessor.get_location() + ".lockfile"
     with CrossPlatLock(lock_file_path):
@@ -63,7 +63,7 @@ def _run_multiple_processes(no_of_processes, cache_location, sleep_interval):
 
 
 def test_multiple_processes_without_timeout_exception(cache_location):
-    num_of_processes = 20
+    num_of_processes = 15
     sleep_interval = 0
     _run_multiple_processes(num_of_processes, cache_location, sleep_interval)
     _validate_result_in_cache(num_of_processes, cache_location)

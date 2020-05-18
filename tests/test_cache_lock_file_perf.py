@@ -1,3 +1,4 @@
+import logging
 import multiprocessing
 import os
 import time
@@ -30,7 +31,9 @@ def _validate_result_in_cache(expected_entry_count, cache_location):
                 assert tag == '<', "Opening bracket not found"
                 prev_process_id = process_id
 
-    assert count == expected_entry_count*2, "No of processes don't match"
+    assert count <= expected_entry_count * 2, "File content corrupted"
+    if count < expected_entry_count * 2:
+        logging.warning("Starvation detected")
 
 
 def _acquire_lock_and_write_to_cache(cache_location, sleep_interval=0):
@@ -55,11 +58,11 @@ def _run_multiple_processes(no_of_processes, cache_location, sleep_interval):
             args=(cache_location, sleep_interval))
         processes.append(t)
 
-    for i in processes:
-        i.start()
+    for process in processes:
+        process.start()
 
-    for i in processes:
-        i.join()
+    for process in processes:
+        process.join()
 
 
 def test_multiple_processes_without_timeout_exception(cache_location):

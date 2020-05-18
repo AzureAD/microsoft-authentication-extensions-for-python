@@ -66,7 +66,7 @@ def _run_multiple_processes(no_of_processes, cache_location, sleep_interval):
 
 
 def test_multiple_processes_without_timeout_exception(cache_location):
-    num_of_processes = 10
+    num_of_processes = 100
     sleep_interval = 0
     _run_multiple_processes(num_of_processes, cache_location, sleep_interval)
     _validate_result_in_cache(num_of_processes, cache_location)

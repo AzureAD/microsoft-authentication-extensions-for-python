@@ -12,7 +12,7 @@ from msal_extensions import FilePersistence, CrossPlatLock
 @pytest.fixture
 def cache_location():
     path_to_script = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(path_to_script, sys.platform, os.environ["TOKENENV"], "msal.cache")
+    return os.path.join(path_to_script, sys.platform, os.environ["TOXENV"], "msal.cache")
 
 
 def _validate_result_in_cache(expected_entry_count, cache_location):

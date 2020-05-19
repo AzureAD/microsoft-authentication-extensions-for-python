@@ -72,7 +72,7 @@ def _run_multiple_processes(no_of_processes, cache_location, sleep_interval):
 
 
 def test_multiple_processes_without_timeout_exception(cache_location):
-    num_of_processes = 80
+    num_of_processes = 50
     sleep_interval = 0
     _run_multiple_processes(num_of_processes, cache_location, sleep_interval)
     _validate_result_in_cache(num_of_processes, cache_location)
@@ -80,7 +80,7 @@ def test_multiple_processes_without_timeout_exception(cache_location):
 
 
 def test_multiple_processes_with_timeout_exception_raised(cache_location):
-    num_of_processes = 6
+    num_of_processes = 10
     sleep_interval = 1
     with pytest.raises(Exception):
         _run_multiple_processes(

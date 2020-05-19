@@ -39,14 +39,18 @@ def _validate_result_in_cache(expected_entry_count, cache_location):
 def _acquire_lock_and_write_to_cache(cache_location, sleep_interval=0):
     cache_accessor = FilePersistence(cache_location)
     lock_file_path = cache_accessor.get_location() + ".lockfile"
-    with CrossPlatLock(lock_file_path):
-        data = cache_accessor.load()
-        if data is None:
-            data = ""
-        data += "< " + str(os.getpid()) + "\n"
-        time.sleep(sleep_interval)
-        data += "> " + str(os.getpid()) + "\n"
-        cache_accessor.save(data)
+    try:
+        with CrossPlatLock(lock_file_path):
+            data = cache_accessor.load()
+            if data is None:
+                data = ""
+            data += "< " + str(os.getpid()) + "\n"
+            time.sleep(sleep_interval)
+            data += "> " + str(os.getpid()) + "\n"
+            cache_accessor.save(data)
+    except Exception as e:
+        logging.warning("Exception raised %s", e)
+        raise
 
 
 def _run_multiple_processes(no_of_processes, cache_location, sleep_interval):
@@ -63,6 +67,8 @@ def _run_multiple_processes(no_of_processes, cache_location, sleep_interval):
 
     for process in processes:
         process.join()
+        if process.exitcode:
+            raise Exception
 
 
 def test_multiple_processes_without_timeout_exception(cache_location):

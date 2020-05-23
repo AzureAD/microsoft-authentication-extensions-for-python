@@ -1,6 +1,8 @@
 import logging
 import multiprocessing
 import os
+import shutil
+import tempfile
 import time
 
 from portalocker import exceptions
@@ -10,9 +12,10 @@ from msal_extensions import FilePersistence, CrossPlatLock
 
 
 @pytest.fixture
-def cache_location():
-    path_to_script = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(path_to_script, str(os.getpid())+"msal.cache")
+def temp_location():
+    test_folder = tempfile.mkdtemp(prefix="test_persistence_roundtrip")
+    yield os.path.join(test_folder, 'persistence.bin')
+    shutil.rmtree(test_folder, ignore_errors=True)
 
 
 def _validate_result_in_cache(cache_location):
@@ -20,7 +23,7 @@ def _validate_result_in_cache(cache_location):
         data = handle.read()
     prev_process_id = None
     count = 0
-    for line in data.split(("\n")):
+    for line in data.split("\n"):
         if line:
             count += 1
             tag, process_id = line.split(" ")
@@ -47,7 +50,7 @@ def _acquire_lock_and_write_to_cache(cache_location, sleep_interval):
             data += "> " + str(os.getpid()) + "\n"
             cache_accessor.save(data)
     except exceptions.LockException as e:
-        logging.warning("Timeout occured %s", e)
+        logging.warning("Unable to acquire lock %s", e)
 
 
 def _run_multiple_processes(no_of_processes, cache_location, sleep_interval):
@@ -66,29 +69,26 @@ def _run_multiple_processes(no_of_processes, cache_location, sleep_interval):
         process.join()
 
 
-def test_lock_for_normal_workload(cache_location):
+def test_lock_for_normal_workload(temp_location):
     num_of_processes = 4
     sleep_interval = 0.1
-    _run_multiple_processes(num_of_processes, cache_location, sleep_interval)
-    count = _validate_result_in_cache(cache_location)
-    os.remove(cache_location)
+    _run_multiple_processes(num_of_processes, temp_location, sleep_interval)
+    count = _validate_result_in_cache(temp_location)
     assert count == num_of_processes * 2, "Should not observe starvation"
 
 
-def test_lock_for_high_workload(cache_location):
-    num_of_processes = 20
+def test_lock_for_high_workload(temp_location):
+    num_of_processes = 80
     sleep_interval = 0
-    _run_multiple_processes(num_of_processes, cache_location, sleep_interval)
-    count = _validate_result_in_cache(cache_location)
-    os.remove(cache_location)
-    assert count <= num_of_processes * 2, "Should observe starvation"
+    _run_multiple_processes(num_of_processes, temp_location, sleep_interval)
+    count = _validate_result_in_cache(temp_location)
+    assert count <= num_of_processes * 2, "Starvation or not, we should not observe garbled payload"
 
 
-def test_lock_for_timeout(cache_location):
+def test_lock_for_timeout(temp_location):
     num_of_processes = 10
     sleep_interval = 1
-    _run_multiple_processes(num_of_processes, cache_location, sleep_interval)
-    count = _validate_result_in_cache(cache_location)
-    os.remove(cache_location)
+    _run_multiple_processes(num_of_processes, temp_location, sleep_interval)
+    count = _validate_result_in_cache(temp_location)
     assert count < num_of_processes * 2, "Should observe starvation"
 

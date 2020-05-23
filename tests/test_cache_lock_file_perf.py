@@ -66,6 +66,15 @@ def _run_multiple_processes(no_of_processes, cache_location, sleep_interval):
         process.join()
 
 
+def test_lock_for_normal_workload(cache_location):
+    num_of_processes = 4
+    sleep_interval = 0.1
+    _run_multiple_processes(num_of_processes, cache_location, sleep_interval)
+    count = _validate_result_in_cache(cache_location)
+    os.remove(cache_location)
+    assert count == num_of_processes * 2, "Should not observe starvation"
+
+
 def test_lock_for_high_workload(cache_location):
     num_of_processes = 20
     sleep_interval = 0
@@ -82,13 +91,4 @@ def test_lock_for_timeout(cache_location):
     count = _validate_result_in_cache(cache_location)
     os.remove(cache_location)
     assert count < num_of_processes * 2, "Should observe starvation"
-
-
-def test_lock_for_normal_workload(cache_location):
-    num_of_processes = 4
-    sleep_interval = 0.1
-    _run_multiple_processes(num_of_processes, cache_location, sleep_interval)
-    count = _validate_result_in_cache(cache_location)
-    os.remove(cache_location)
-    assert count == num_of_processes * 2, "Should not observe starvation"
 

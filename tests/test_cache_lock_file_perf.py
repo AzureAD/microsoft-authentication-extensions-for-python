@@ -1,9 +1,9 @@
 import logging
 import multiprocessing
 import os
-import sys
 import time
 
+from portalocker import exceptions
 import pytest
 
 from msal_extensions import FilePersistence, CrossPlatLock
@@ -15,7 +15,7 @@ def cache_location():
     return os.path.join(path_to_script, str(os.getpid())+"msal.cache")
 
 
-def _validate_result_in_cache(expected_entry_count, cache_location):
+def _validate_result_in_cache(cache_location):
     with open(cache_location) as handle:
         data = handle.read()
     prev_process_id = None
@@ -34,27 +34,30 @@ def _validate_result_in_cache(expected_entry_count, cache_location):
     return count
 
 
-def _acquire_lock_and_write_to_cache(cache_location, sleep_interval=0):
+def _acquire_lock_and_write_to_cache(cache_location, sleep_interval):
     cache_accessor = FilePersistence(cache_location)
     lock_file_path = cache_accessor.get_location() + ".lockfile"
-    with CrossPlatLock(lock_file_path):
-        data = cache_accessor.load()
-        if data is None:
-            data = ""
-        data += "< " + str(os.getpid()) + "\n"
-        time.sleep(sleep_interval)
-        data += "> " + str(os.getpid()) + "\n"
-        cache_accessor.save(data)
+    try:
+        with CrossPlatLock(lock_file_path):
+            data = cache_accessor.load()
+            if data is None:
+                data = ""
+            data += "< " + str(os.getpid()) + "\n"
+            time.sleep(sleep_interval)
+            data += "> " + str(os.getpid()) + "\n"
+            cache_accessor.save(data)
+    except exceptions.LockException as e:
+        logging.warning("Timeout occured %s", e)
 
 
 def _run_multiple_processes(no_of_processes, cache_location, sleep_interval):
     open(cache_location, "w+")
     processes = []
     for i in range(no_of_processes):
-        t = multiprocessing.Process(
+        process = multiprocessing.Process(
             target=_acquire_lock_and_write_to_cache,
             args=(cache_location, sleep_interval))
-        processes.append(t)
+        processes.append(process)
 
     for process in processes:
         process.start()
@@ -63,21 +66,29 @@ def _run_multiple_processes(no_of_processes, cache_location, sleep_interval):
         process.join()
 
 
-def test_multiple_processes_without_timeout_exception(cache_location):
+def test_lock_for_high_workload(cache_location):
     num_of_processes = 20
     sleep_interval = 0
     _run_multiple_processes(num_of_processes, cache_location, sleep_interval)
-    count = _validate_result_in_cache(num_of_processes, cache_location)
-    assert count <= num_of_processes * 2
+    count = _validate_result_in_cache(cache_location)
     os.remove(cache_location)
+    assert count <= num_of_processes * 2, "Should observe starvation"
 
 
-def test_multiple_processes_with_timeout_exception_raised(cache_location):
+def test_lock_for_timeout(cache_location):
     num_of_processes = 10
     sleep_interval = 1
-    _run_multiple_processes(
-        num_of_processes, cache_location, sleep_interval)
-    count = _validate_result_in_cache(num_of_processes, cache_location)
-    assert count < num_of_processes * 2, "Should observe starvation"
+    _run_multiple_processes(num_of_processes, cache_location, sleep_interval)
+    count = _validate_result_in_cache(cache_location)
     os.remove(cache_location)
+    assert count < num_of_processes * 2, "Should observe starvation"
+
+
+def test_lock_for_normal_workload(cache_location):
+    num_of_processes = 4
+    sleep_interval = 0.1
+    _run_multiple_processes(num_of_processes, cache_location, sleep_interval)
+    count = _validate_result_in_cache(cache_location)
+    os.remove(cache_location)
+    assert count == num_of_processes * 2, "Should not observe starvation"
 

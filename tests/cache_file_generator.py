@@ -24,5 +24,6 @@ def _acquire_lock_and_write_to_cache(cache_location, sleep_interval):
         logging.warning("Unable to acquire lock %s", e)
 
 
-_acquire_lock_and_write_to_cache(sys.argv[1], float(sys.argv[2]))
+if __name__ == "__main__":
+    _acquire_lock_and_write_to_cache(sys.argv[1], float(sys.argv[2]))
 

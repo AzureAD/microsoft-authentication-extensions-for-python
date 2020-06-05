@@ -1,3 +1,11 @@
+"""
+This is a console application which is to be used for cross-platform lock performance testing.
+The app will acquire lock for the cache file, log the process id and free the lock
+It takes in two arguments - cache file path and the sleep interval.
+The cache file path is the path of cache file.
+The sleep interval is the time in seconds for which the lock is held by a process.
+"""
+
 import logging
 import os
 import sys

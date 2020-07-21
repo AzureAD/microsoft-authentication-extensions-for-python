@@ -2,6 +2,8 @@
 import os
 import sys
 import errno
+import time
+
 import portalocker
 from distutils.version import LooseVersion
 
@@ -25,7 +27,19 @@ class CrossPlatLock(object):
             flags=portalocker.LOCK_EX | portalocker.LOCK_NB,
             **open_kwargs)
 
+    def try_to_create_lock_file(self):
+        retries_no = 10
+        for i in range(retries_no):
+            try:
+                open(self._lockpath, 'x')
+            except FileExistsError:
+                time.sleep(10)
+
+        return False
+
     def __enter__(self):
+        if not self.try_to_create_lock_file():
+            print("Failed to create lock file")
         file_handle = self._lock.__enter__()
         file_handle.write('{} {}'.format(os.getpid(), sys.argv[0]).encode('utf-8'))
         return file_handle

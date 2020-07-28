@@ -30,11 +30,11 @@ class CrossPlatLock(object):
     def try_to_create_lock_file(self):
         retries_no = 10
         for i in range(retries_no):
-            try:
-                open(self._lockpath, 'x')
-            except FileExistsError:
+            if os.path.isfile(self._lockpath):
                 time.sleep(10)
-
+            else:
+                open(self._lockpath, 'w+')
+                return True
         return False
 
     def __enter__(self):

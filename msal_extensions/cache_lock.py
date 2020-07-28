@@ -28,12 +28,12 @@ class CrossPlatLock(object):
             **open_kwargs)
 
     def try_to_create_lock_file(self):
-        retries_no = 10
+        retries_no = 20
         for i in range(retries_no):
             if os.path.isfile(self._lockpath):
-                time.sleep(10)
+                time.sleep(0.25)
             else:
-                open(self._lockpath, 'w+')
+                open(self._lockpath, 'wb+')
                 return True
         return False
 

@@ -124,7 +124,7 @@ class FilePersistenceWithDataProtection(FilePersistence):
             data = handle.read()
             if data is not b"":
                 return self._dp_agent.unprotect(data)
-        return data
+            return None
 
 
 class KeychainPersistence(BasePersistence):

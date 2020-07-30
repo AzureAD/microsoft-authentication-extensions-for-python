@@ -121,7 +121,10 @@ class FilePersistenceWithDataProtection(FilePersistence):
     def load(self):
         # type: () -> str
         with open(self._location, 'rb') as handle:
-            return self._dp_agent.unprotect(handle.read())
+            data = handle.read()
+            if data is not b"":
+                return self._dp_agent.unprotect(data)
+        return data
 
 
 class KeychainPersistence(BasePersistence):

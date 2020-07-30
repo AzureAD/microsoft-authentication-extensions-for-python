@@ -172,6 +172,8 @@ class Keychain(object):
             contents,
             None,
         )
+        if exit_status == Keychain.ITEM_NOT_FOUND:
+            return None
 
         if exit_status:
             raise KeychainError(exit_status=exit_status)

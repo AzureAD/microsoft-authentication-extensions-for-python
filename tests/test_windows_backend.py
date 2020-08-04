@@ -89,8 +89,7 @@ def test_read_msal_cache_direct():
     access_tokens = cache.find(msal.TokenCache.CredentialType.ACCESS_TOKEN)
     assert len(access_tokens) > 0
 
-@pytest.mark.skipif(
-    is_running_on_travis_ci, reason="Requires no key chain entry")
+
 def test_windows_token_cache_roundtrip():
     client_id = os.getenv('AZURE_CLIENT_ID')
     client_secret = os.getenv('AZURE_CLIENT_SECRET')
@@ -114,7 +113,7 @@ def test_windows_token_cache_roundtrip():
         shutil.rmtree(test_folder, ignore_errors=True)
 
 @pytest.mark.skipif(
-    is_running_on_travis_ci, "Requires manual testing")
+    is_running_on_travis_ci, reason="Requires manual testing")
 def test_windows_empty_file_exists_before_first_use():
     test_folder = tempfile.mkdtemp(prefix="msal_extension_test_windows_token_cache_roundtrip")
     cache_file = os.path.join(test_folder, 'msal.cache')

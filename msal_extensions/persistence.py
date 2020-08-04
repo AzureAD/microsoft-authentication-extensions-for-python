@@ -14,7 +14,6 @@ try:
 except:
     from pathlib2 import Path  # An extra lib for Python 2
 
-
 try:
     ABC = abc.ABC
 except AttributeError:  # Python 2.7, abc exists, but not ABC
@@ -153,8 +152,13 @@ class KeychainPersistence(BasePersistence):
 
     def load(self):
         with self._Keychain() as locker:
-            return locker.get_generic_password(
-                self._service_name, self._account_name)
+            from .osx import KeychainError
+            try:
+                return locker.get_generic_password(
+                    self._service_name, self._account_name)
+            except KeychainError as kce:
+                if kce.exit_status != KeychainError.ITEM_NOT_FOUND:
+                    raise
 
     def time_last_modified(self):
         return self._file_persistence.time_last_modified()

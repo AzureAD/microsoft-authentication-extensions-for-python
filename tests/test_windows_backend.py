@@ -7,11 +7,19 @@ import pytest
 import uuid
 import msal
 
+from msal_extensions import FilePersistenceWithDataProtection
+
 if not sys.platform.startswith('win'):
     pytest.skip('skipping windows-only tests', allow_module_level=True)
 else:
     from msal_extensions.windows import WindowsDataProtectionAgent
-    from msal_extensions.token_cache import WindowsTokenCache
+    from msal_extensions.token_cache import WindowsTokenCache, PersistedTokenCache
+
+is_running_on_travis_ci = bool(  # (WTF) What-The-Finding:
+    # The bool(...) is necessary, otherwise skipif(...) would treat "true" as
+    # string conditions and then raise an undefined "true" exception.
+    # https://docs.pytest.org/en/latest/historical-notes.html#string-conditions
+    os.getenv("TRAVIS"))
 
 
 def test_dpapi_roundtrip_with_entropy():
@@ -102,5 +110,36 @@ def test_windows_token_cache_roundtrip():
         os.utime(cache_file, None)  # Mock having another process update the cache.
         token2 = app.acquire_token_silent(scopes=desired_scopes, account=None)
         assert token1['access_token'] == token2['access_token']
+    finally:
+        shutil.rmtree(test_folder, ignore_errors=True)
+
+
+def test_windows_empty_file_exists_before_first_use():
+    test_folder = tempfile.mkdtemp(prefix="msal_extension_test_windows_token_cache_roundtrip")
+    cache_file = os.path.join(test_folder, 'msal.cache')
+    open(cache_file, 'w+')
+    try:
+        persistence = FilePersistenceWithDataProtection(cache_file)
+        app = msal.PublicClientApplication(
+            client_id="client_id", token_cache=PersistedTokenCache(persistence))
+        assert app.get_accounts() == []
+    finally:
+        shutil.rmtree(test_folder, ignore_errors=True)
+
+
+def test_windows_empty_file_contains_msal_cache_before_first_use():
+    test_folder = tempfile.mkdtemp(prefix="msal_extension_test_windows_token_cache_roundtrip")
+    cache_file = os.path.join(test_folder, 'msal.cache')
+    fh = open(cache_file, 'w+')
+    cache_content = '{"AccessToken": {}, "Account": {}, "IdToken": {}, "RefreshToken": {}, "AppMetadata": {}}'
+    fh.write(cache_content)
+    fh.close()
+    try:
+        persistence = FilePersistenceWithDataProtection(cache_file)
+        app = msal.PublicClientApplication(
+            client_id="client_id", token_cache=PersistedTokenCache(persistence))
+        with pytest.raises(OSError) as err:
+            app.get_accounts()
+        assert err.value[3] == 13  # WinError 13 - The data is invalid
     finally:
         shutil.rmtree(test_folder, ignore_errors=True)

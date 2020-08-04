@@ -172,6 +172,7 @@ class Keychain(object):
             contents,
             None,
         )
+        
         if exit_status:
             raise KeychainError(exit_status=exit_status)
 

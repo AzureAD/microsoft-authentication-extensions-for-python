@@ -6,13 +6,12 @@ import pytest
 import uuid
 import msal
 
-from msal_extensions import KeychainPersistence
-
 if not sys.platform.startswith('darwin'):
     pytest.skip('skipping MacOS-only tests', allow_module_level=True)
 else:
     from msal_extensions.osx import Keychain
     from msal_extensions.token_cache import OSXTokenCache, PersistedTokenCache
+    from msal_extensions.persistence import KeychainPersistence
 
 is_running_on_travis_ci = bool(  # (WTF) What-The-Finding:
     # The bool(...) is necessary, otherwise skipif(...) would treat "true" as

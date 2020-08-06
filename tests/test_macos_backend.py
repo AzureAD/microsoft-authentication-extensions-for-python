@@ -10,14 +10,7 @@ if not sys.platform.startswith('darwin'):
     pytest.skip('skipping MacOS-only tests', allow_module_level=True)
 else:
     from msal_extensions.osx import Keychain
-    from msal_extensions.token_cache import OSXTokenCache, PersistedTokenCache
-    from msal_extensions.persistence import KeychainPersistence
-
-is_running_on_travis_ci = bool(  # (WTF) What-The-Finding:
-    # The bool(...) is necessary, otherwise skipif(...) would treat "true" as
-    # string conditions and then raise an undefined "true" exception.
-    # https://docs.pytest.org/en/latest/historical-notes.html#string-conditions
-    os.getenv("TRAVIS"))
+    from msal_extensions.token_cache import OSXTokenCache
 
 
 def test_keychain_roundtrip():
@@ -51,17 +44,3 @@ def test_osx_token_cache_roundtrip():
     finally:
         shutil.rmtree(test_folder, ignore_errors=True)
 
-@pytest.mark.skipif(
-    is_running_on_travis_ci, reason="Requires manual testing")
-def test_macos_no_keychain_entry_exists_before_first_use():
-    test_folder = tempfile.mkdtemp(prefix="msal_extension_test_windows_token_cache_roundtrip")
-    cache_file = os.path.join(test_folder, 'msal.cache')
-    open(cache_file, 'w+')
-    try:
-        # Make sure key chain entry does not already exist for below service name
-        persistence = KeychainPersistence(cache_file, "my_service_name", "my_account_name")
-        app = msal.PublicClientApplication(
-            client_id="client_id", token_cache=PersistedTokenCache(persistence))
-        assert app.get_accounts() == []  # ITEM_NOT_FOUND is handled
-    finally:
-        shutil.rmtree(test_folder, ignore_errors=True)

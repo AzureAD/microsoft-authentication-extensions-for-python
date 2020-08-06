@@ -43,4 +43,3 @@ def test_osx_token_cache_roundtrip():
         assert token1['access_token'] == token2['access_token']
     finally:
         shutil.rmtree(test_folder, ignore_errors=True)
-

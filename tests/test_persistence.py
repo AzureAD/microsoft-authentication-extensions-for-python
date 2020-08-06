@@ -57,7 +57,7 @@ def test_libsecret_persistence(temp_location):
 def test_windows_empty_file_exists_before_first_use():
     test_folder = tempfile.mkdtemp(prefix="msal_extension_test_windows_token_cache_roundtrip")
     cache_file = os.path.join(test_folder, 'msal.cache')
-    open("msal.cache", 'w+')
+    open(cache_file, 'w+')
     try:
         persistence = FilePersistenceWithDataProtection(cache_file)
         assert persistence.load() is None  # Empty file should just be a NO-OP

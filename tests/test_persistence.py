@@ -80,5 +80,5 @@ def test_macos_no_keychain_entry_exists_before_first_use(temp_location):
     open(temp_location, 'w')
     # Make sure key chain entry does not already exist for below service name
     persistence = KeychainPersistence(
-        temp_location, "my_service_name", "my_account_name")
+        temp_location, "service_name", "account_name")
     assert persistence.load() is None  # ITEM_NOT_FOUND is handled

@@ -123,7 +123,7 @@ class FilePersistenceWithDataProtection(FilePersistence):
         # type: () -> Optional[str]
         with open(self._location, 'rb') as handle:
             data = handle.read()
-            return self._dp_agent.unprotect(data) if data else None
+        return self._dp_agent.unprotect(data) if data else None
 
 
 class KeychainPersistence(BasePersistence):

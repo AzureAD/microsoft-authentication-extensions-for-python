@@ -55,12 +55,18 @@ class BasePersistence(ABC):
     @abc.abstractmethod
     def load(self):
         # type: () -> str
-        """Load content from this persistence"""
+        """Load content from this persistence.
+
+        Could raise IOError if no save() was called before.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
     def time_last_modified(self):
-        """Get the last time when this persistence has been modified"""
+        """Get the last time when this persistence has been modified.
+
+        Could raise IOError if no save() was called before.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -115,13 +121,15 @@ class FilePersistenceWithDataProtection(FilePersistence):
 
     def save(self, content):
         # type: (str) -> None
+        data = self._dp_agent.protect(content)
         with open(self._location, 'wb+') as handle:
-            handle.write(self._dp_agent.protect(content))
+            handle.write(data)
 
     def load(self):
         # type: () -> str
         with open(self._location, 'rb') as handle:
-            return self._dp_agent.unprotect(handle.read())
+            data = handle.read()
+        return self._dp_agent.unprotect(data)
 
 
 class KeychainPersistence(BasePersistence):
@@ -136,9 +144,10 @@ class KeychainPersistence(BasePersistence):
         """
         if not (service_name and account_name):  # It would hang on OSX
             raise ValueError("service_name and account_name are required")
-        from .osx import Keychain  # pylint: disable=import-outside-toplevel
+        from .osx import Keychain, KeychainError  # pylint: disable=import-outside-toplevel
         self._file_persistence = FilePersistence(signal_location)  # Favor composition
         self._Keychain = Keychain  # pylint: disable=invalid-name
+        self._KeychainError = KeychainError  # pylint: disable=invalid-name
         self._service_name = service_name
         self._account_name = account_name
 
@@ -150,8 +159,16 @@ class KeychainPersistence(BasePersistence):
 
     def load(self):
         with self._Keychain() as locker:
-            return locker.get_generic_password(
-                self._service_name, self._account_name)
+            try:
+                return locker.get_generic_password(
+                    self._service_name, self._account_name)
+            except self._KeychainError as ex:
+                if ex.exit_status == self._KeychainError.ITEM_NOT_FOUND:
+                    # This happens when a load() is called before a save().
+                    # We map it to cross-platform IOError for unified catching.
+                    raise IOError(errno.ENOENT, "Content is empty", "%s %s".format(
+                        self._service_name, self._account_name))
+                raise  # We do not intend to hide any other underlying exceptions
 
     def time_last_modified(self):
         return self._file_persistence.time_last_modified()
@@ -188,7 +205,12 @@ class LibsecretPersistence(BasePersistence):
             self._file_persistence.touch()  # For time_last_modified()
 
     def load(self):
-        return self._agent.load()
+        data = self._agent.load()
+        if data is None:
+            # Lower level libsecret would return None when found nothing. Here
+            # in persistence layer, we convert it to an IOError for consistence.
+            raise IOError(errno.ENOENT, "Content is empty")
+        return data
 
     def time_last_modified(self):
         return self._file_persistence.time_last_modified()

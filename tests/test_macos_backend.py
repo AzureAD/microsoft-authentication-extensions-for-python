@@ -52,12 +52,14 @@ def test_osx_token_cache_roundtrip():
     finally:
         shutil.rmtree(test_folder, ignore_errors=True)
 
-@pytest.mark.skipif(is_running_on_travis_ci)
-def test_item_not_found_exception_is_no_op():
+@pytest.mark.skipif(
+    is_running_on_travis_ci, reason="Requires manual testing")
+def test_keychain_item_not_found_exception_is_no_op():
     test_folder = tempfile.mkdtemp(prefix="msal_extension_test_osx_token_cache_roundtrip")
     cache_file = os.path.join(test_folder, 'msal.cache')
     open(cache_file, 'w')
     try:
+        # The service name shouldn't exist in Keychain already
         persistence = KeychainPersistence(cache_file, "my_service_name", "my_account_name")
         app = msal.PublicClientApplication(
             client_id="client_id", token_cache=PersistedTokenCache(persistence))

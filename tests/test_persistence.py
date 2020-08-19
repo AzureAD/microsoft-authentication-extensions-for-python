@@ -51,34 +51,3 @@ def test_libsecret_persistence(temp_location):
         "my_schema_name",
         {"my_attr_1": "foo", "my_attr_2": "bar"},
         ))
-
-@pytest.mark.skipif(
-    is_running_on_travis_ci or not sys.platform.startswith('win'),
-    reason="Requires manual testing on Windows")
-def test_windows_empty_file_exists_before_first_use(temp_location):
-    open(temp_location, 'w')
-    persistence = FilePersistenceWithDataProtection(temp_location)
-    assert persistence.load() is None  # Empty file should just be a NO-OP
-
-@pytest.mark.skipif(
-    is_running_on_travis_ci or not sys.platform.startswith('win'),
-    reason="Requires manual testing on Windows")
-def test_windows_file_contains_data_before_first_use(temp_location):
-    fh = open(temp_location, 'w')
-    cache_content = '{"AccessToken": {}, "Account": {}, "IdToken": {}, "RefreshToken": {}, "AppMetadata": {}}'
-    fh.write(cache_content)
-    fh.close()
-    persistence = FilePersistenceWithDataProtection(temp_location)
-    with pytest.raises(OSError) as err:
-        persistence.load()
-    assert err.value.winerror == 13  # WinError 13 - The data is invalid
-
-@pytest.mark.skipif(
-    is_running_on_travis_ci or not sys.platform.startswith('darwin'),
-    reason="Requires manual testing on OSX")
-def test_macos_no_keychain_entry_exists_before_first_use(temp_location):
-    open(temp_location, 'w')
-    # Make sure key chain entry does not already exist for below service name
-    persistence = KeychainPersistence(
-        temp_location, "service_name", "account_name")
-    assert persistence.load() is None  # ITEM_NOT_FOUND is handled

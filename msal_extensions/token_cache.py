@@ -1,5 +1,6 @@
 """Generic functions and types for working with a TokenCache that is not platform specific."""
 import os
+import sys
 import warnings
 import time
 import errno
@@ -37,6 +38,10 @@ class PersistedTokenCache(msal.SerializableTokenCache):
                 self._last_sync = time.time()
         except IOError as exp:
             if exp.errno != errno.ENOENT:
+                if sys.platform.startswith('darwin'):
+                    from .osx import KeychainError
+                    if exp.exit_status != KeychainError.ITEM_NOT_FOUND:
+                        raise
                 raise
             # Otherwise, from cache's perspective, a nonexistent file is a NO-OP
 

@@ -120,10 +120,9 @@ class FilePersistenceWithDataProtection(FilePersistence):
 
     def load(self):
         """Return decrypted content, or None if input is empty."""
-        # type: () -> Optional[str]
+        # type: () -> str
         with open(self._location, 'rb') as handle:
-            data = handle.read()
-        return self._dp_agent.unprotect(data) if data else None
+            return self._dp_agent.unprotect(handle.read())
 
 
 class KeychainPersistence(BasePersistence):
@@ -152,15 +151,9 @@ class KeychainPersistence(BasePersistence):
 
     def load(self):
         """Return content from OSX Keychain, or None if the content does not exist."""
-        from .osx import KeychainError
         with self._Keychain() as locker:
-            try:
-                return locker.get_generic_password(
-                    self._service_name, self._account_name)
-            except KeychainError as kce:
-                if kce.exit_status == KeychainError.ITEM_NOT_FOUND:
-                    return None  # Map ITEM_NOT_FOUND exception to None return value
-                raise
+            return locker.get_generic_password(
+                self._service_name, self._account_name)
 
     def time_last_modified(self):
         return self._file_persistence.time_last_modified()

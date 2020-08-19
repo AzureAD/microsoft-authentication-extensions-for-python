@@ -42,8 +42,9 @@ class PersistedTokenCache(msal.SerializableTokenCache):
                     from .osx import KeychainError
                     if exp.exit_status != KeychainError.ITEM_NOT_FOUND:
                         raise
-                raise
-            # Otherwise, from cache's perspective, a nonexistent file is a NO-OP
+                else:
+                    raise
+                    # Otherwise, from cache's perspective, a nonexistent file is a NO-OP
 
     def modify(self, credential_type, old_entry, new_key_value_pairs=None):
         with CrossPlatLock(self._lock_location):

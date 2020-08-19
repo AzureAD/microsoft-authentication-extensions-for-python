@@ -119,7 +119,6 @@ class FilePersistenceWithDataProtection(FilePersistence):
             handle.write(self._dp_agent.protect(content))
 
     def load(self):
-        """Return decrypted content, or None if input is empty."""
         # type: () -> str
         with open(self._location, 'rb') as handle:
             return self._dp_agent.unprotect(handle.read())
@@ -150,7 +149,6 @@ class KeychainPersistence(BasePersistence):
         self._file_persistence.touch()  # For time_last_modified()
 
     def load(self):
-        """Return content from OSX Keychain, or None if the content does not exist."""
         with self._Keychain() as locker:
             return locker.get_generic_password(
                 self._service_name, self._account_name)
@@ -190,7 +188,6 @@ class LibsecretPersistence(BasePersistence):
             self._file_persistence.touch()  # For time_last_modified()
 
     def load(self):
-        """Loads content in the secret service, return None when found nothing"""
         return self._agent.load()
 
     def time_last_modified(self):

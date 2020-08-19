@@ -51,3 +51,4 @@ def test_libsecret_persistence(temp_location):
         "my_schema_name",
         {"my_attr_1": "foo", "my_attr_2": "bar"},
         ))
+

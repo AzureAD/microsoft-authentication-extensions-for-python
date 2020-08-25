@@ -35,7 +35,7 @@ class PersistedTokenCache(msal.SerializableTokenCache):
             if self._last_sync < self._persistence.time_last_modified():
                 self.deserialize(self._persistence.load())
                 self._last_sync = time.time()
-        except IOError as exp:
+        except EnvironmentError as exp:
             if exp.errno != errno.ENOENT:
                 raise
             # Otherwise, from cache's perspective, a nonexistent file is a NO-OP

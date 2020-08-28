@@ -50,8 +50,9 @@ def _mkdir_p(path):
 # otherwise caller would need to catch os-specific persistence exceptions.
 class PersistenceNotFound(OSError):
     def __init__(
-            self, err_no=errno.ENOENT, message="Persistence not found", where=None):
-        super(PersistenceNotFound, self).__init__(err_no, message, where)
+            self,
+            err_no=errno.ENOENT, message="Persistence not found", location=None):
+        super(PersistenceNotFound, self).__init__(err_no, message, location)
 
 
 class BasePersistence(ABC):
@@ -115,7 +116,7 @@ class FilePersistence(BasePersistence):
                     message=(
                         "Persistence not initialized. "
                         "You can recover by calling a save() first."),
-                    where=self._location,
+                    location=self._location,
                     )
             raise
 
@@ -129,7 +130,7 @@ class FilePersistence(BasePersistence):
                     message=(
                         "Persistence not initialized. "
                         "You can recover by calling a save() first."),
-                    where=self._location,
+                    location=self._location,
                     )
             raise
 
@@ -171,7 +172,7 @@ class FilePersistenceWithDataProtection(FilePersistence):
                     message=(
                         "Persistence not initialized. "
                         "You can recover by calling a save() first."),
-                    where=self._location,
+                    location=self._location,
                     )
             logger.exception(
                 "DPAPI error likely caused by file content not previously encrypted. "
@@ -214,7 +215,8 @@ class KeychainPersistence(BasePersistence):
                     # This happens when a load() is called before a save().
                     # We map it into cross-platform error for unified catching.
                     raise PersistenceNotFound(
-                        where="%s %s".format(self._service_name, self._account_name),
+                        location="Service:{} Account:{}".format(
+                            self._service_name, self._account_name),
                         message=(
                             "Keychain persistence not initialized. "
                             "You can recover by call a save() first."),

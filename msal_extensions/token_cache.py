@@ -2,14 +2,13 @@
 import os
 import warnings
 import time
-import errno
 import logging
 
 import msal
 
 from .cache_lock import CrossPlatLock
 from .persistence import (
-    _mkdir_p, FilePersistence,
+    _mkdir_p, PersistenceNotFound, FilePersistence,
     FilePersistenceWithDataProtection, KeychainPersistence)
 
 
@@ -35,10 +34,10 @@ class PersistedTokenCache(msal.SerializableTokenCache):
             if self._last_sync < self._persistence.time_last_modified():
                 self.deserialize(self._persistence.load())
                 self._last_sync = time.time()
-        except EnvironmentError as exp:
-            if exp.errno != errno.ENOENT:
-                raise
-            # Otherwise, from cache's perspective, a nonexistent file is a NO-OP
+        except PersistenceNotFound:
+            # From cache's perspective, a nonexistent persistence is a NO-OP.
+            pass
+        # However, existing data unable to be decrypted will still be bubbled up.
 
     def modify(self, credential_type, old_entry, new_key_value_pairs=None):
         with CrossPlatLock(self._lock_location):

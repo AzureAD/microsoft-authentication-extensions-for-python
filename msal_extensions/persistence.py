@@ -48,7 +48,11 @@ def _mkdir_p(path):
 # We do not aim to wrap every os-specific exception.
 # Here we define only the most common one,
 # otherwise caller would need to catch os-specific persistence exceptions.
-class PersistenceNotFound(OSError):
+class PersistenceNotFound(IOError):  # Use IOError rather than OSError as base,
+        # because historically an IOError was bubbled up and expected.
+        # https://github.com/AzureAD/microsoft-authentication-extensions-for-python/blob/0.2.2/msal_extensions/token_cache.py#L38
+        # Now we want to maintain backward compatibility even when using Python 2.x
+        # It makes no difference in Python 3.3+ where IOError is an alias of OSError.
     def __init__(
             self,
             err_no=errno.ENOENT, message="Persistence not found", location=None):

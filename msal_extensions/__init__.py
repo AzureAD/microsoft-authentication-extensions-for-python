@@ -1,5 +1,5 @@
 """Provides auxiliary functionality to the `msal` package."""
-__version__ = "0.2.2"
+__version__ = "0.3.0"
 
 import sys
 

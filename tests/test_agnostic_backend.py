@@ -44,3 +44,8 @@ def test_current_platform_cache_roundtrip_with_alias_class(temp_location):
 def test_persisted_token_cache(temp_location):
     _test_token_cache_roundtrip(PersistedTokenCache(FilePersistence(temp_location)))
 
+def test_file_not_found_error_is_not_raised():
+    persistence = FilePersistence('non_existing_file')
+    cache = PersistedTokenCache(persistence=persistence)
+    # An exception raised here will fail the test case as it is supposed to be a NO-OP
+    cache.find('')

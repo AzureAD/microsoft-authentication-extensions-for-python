@@ -67,7 +67,7 @@ def test_lock_for_high_workload(temp_location):
 
 
 def test_lock_for_timeout(temp_location):
-    num_of_processes = 20
+    num_of_processes = 30
     sleep_interval = 1
     _run_multiple_processes(num_of_processes, temp_location, sleep_interval)
     count = _validate_result_in_cache(temp_location)

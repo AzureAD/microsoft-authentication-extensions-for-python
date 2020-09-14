@@ -39,13 +39,13 @@ class CrossPlatLock(object):
                 if err.errno == errno.EEXIST:
                     time.sleep(retry_delay_milliseconds)
             except ValueError:
-                logging.info("Python 2 does not support atomic creation of file")
+                logging.warning("Python 2 does not support atomic creation of file")
                 return False
         return False
 
     def __enter__(self):
         if not self.try_to_create_lock_file():
-            logging.info("Failed to create lock file")
+            logging.warning("Failed to create lock file")
         file_handle = self._lock.__enter__()
         file_handle.write('{} {}'.format(os.getpid(), sys.argv[0]).encode('utf-8'))
         return file_handle

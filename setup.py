@@ -19,9 +19,6 @@ setup(
     packages=find_packages(),
     long_description=long_description,
     long_description_content_type="text/markdown",
-    classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
-    ],
     package_data={'': ['LICENSE']},
     install_requires=[
         'msal>=0.4.1,<2.0.0',

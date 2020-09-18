@@ -33,8 +33,8 @@ class CrossPlatLock(object):
         retry_delay_milliseconds = 0.150
         for i in range(retries_no):
             try:
-                open(self._lockpath, 'x')
-                return True
+                with open(self._lockpath, 'x'):
+                    return True
             except OSError as err:
                 if err.errno == errno.EEXIST:
                     time.sleep(retry_delay_milliseconds)

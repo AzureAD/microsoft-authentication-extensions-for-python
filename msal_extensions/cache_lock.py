@@ -39,7 +39,10 @@ class CrossPlatLock(object):
                     return True
             except OSError as err:
                 if err.errno == errno.EEXIST:
+                    logging.warning("Lock file exists, trying again after some time")
                     time.sleep(check_interval)
+                else:
+                    raise
             except ValueError:
                 logging.warning("Python 2 does not support atomic creation of file")
                 return False

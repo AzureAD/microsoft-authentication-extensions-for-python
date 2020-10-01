@@ -10,8 +10,6 @@ logger = logging.getLogger(__name__)
 import portalocker
 from distutils.version import LooseVersion
 
-current_time = getattr(time, "monotonic", time.time)
-
 
 class CrossPlatLock(object):
     """Offers a mechanism for waiting until another process is finished interacting with a shared
@@ -35,21 +33,18 @@ class CrossPlatLock(object):
     def try_to_create_lock_file(self):
         timeout = 5
         check_interval = 0.25
+        current_time = getattr(time, "monotonic", time.time)
         timeout_end = current_time() + timeout
         while timeout_end > current_time():
             try:
                 with open(self._lockpath, 'x'):
                     return True
-            except OSError as err:
-                if err.errno == errno.EEXIST:
-                    logger.warning("Lock file exists, trying again after some time")
-                    time.sleep(check_interval)
-                else:
-                    raise
-            except ValueError:
+            except ValueError:  # This needs to be the first clause, for Python 2 to hit it
                 logger.warning("Python 2 does not support atomic creation of file")
                 return False
-
+            except FileExistsError:  # Only Python 3 will reach this clause
+                logger.warning("Lock file exists, trying again after some time")
+                time.sleep(check_interval)
         return False
 
     def __enter__(self):

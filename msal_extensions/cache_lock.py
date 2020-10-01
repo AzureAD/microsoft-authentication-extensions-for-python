@@ -2,6 +2,11 @@
 import os
 import sys
 import errno
+import time
+import logging
+
+logger = logging.getLogger(__name__)
+
 import portalocker
 from distutils.version import LooseVersion
 
@@ -25,7 +30,26 @@ class CrossPlatLock(object):
             flags=portalocker.LOCK_EX | portalocker.LOCK_NB,
             **open_kwargs)
 
+    def try_to_create_lock_file(self):
+        timeout = 5
+        check_interval = 0.25
+        current_time = getattr(time, "monotonic", time.time)
+        timeout_end = current_time() + timeout
+        while timeout_end > current_time():
+            try:
+                with open(self._lockpath, 'x'):
+                    return True
+            except ValueError:  # This needs to be the first clause, for Python 2 to hit it
+                logger.warning("Python 2 does not support atomic creation of file")
+                return False
+            except FileExistsError:  # Only Python 3 will reach this clause
+                logger.warning("Lock file exists, trying again after some time")
+                time.sleep(check_interval)
+        return False
+
     def __enter__(self):
+        if not self.try_to_create_lock_file():
+            logger.warning("Failed to create lock file")
         file_handle = self._lock.__enter__()
         file_handle.write('{} {}'.format(os.getpid(), sys.argv[0]).encode('utf-8'))
         return file_handle

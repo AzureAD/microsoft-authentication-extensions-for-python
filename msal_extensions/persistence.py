@@ -10,6 +10,7 @@ import abc
 import os
 import errno
 import logging
+import sys
 try:
     from pathlib import Path  # Built-in in Python 3
 except:
@@ -36,6 +37,12 @@ def _mkdir_p(path):
     """
     if not path:
         return  # NO-OP
+
+    if sys.version_info >= (3, 2):
+        # Can just use the standard Python functionality if it's recent enough (and the
+        # manual handling below can be dropped altogether when Python 2 support goes)
+        return os.makedirs(path, exist_ok=True)
+
     try:
         os.makedirs(path)
     except OSError as exp:

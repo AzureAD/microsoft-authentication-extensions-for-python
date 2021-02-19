@@ -10,6 +10,7 @@ import abc
 import os
 import errno
 import logging
+import sys
 try:
     from pathlib import Path  # Built-in in Python 3
 except:
@@ -28,14 +29,19 @@ logger = logging.getLogger(__name__)
 def _mkdir_p(path):
     """Creates a directory, and any necessary parents.
 
-    This implementation based on a Stack Overflow question that can be found here:
-    https://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python
-
     If the path provided is an existing file, this function raises an exception.
     :param path: The directory name that should be created.
     """
     if not path:
         return  # NO-OP
+
+    if sys.version_info >= (3, 2):
+        os.makedirs(path, exist_ok=True)
+        return
+
+    # This fallback implementation is based on a Stack Overflow question:
+    # https://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python
+    # Known issue: it won't work when the path is a root folder like "C:\\"
     try:
         os.makedirs(path)
     except OSError as exp:

@@ -37,6 +37,16 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Install Linux dependencies for Python 2
+      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == '2.7' }}
+      run: |
+        sudo apt update
+        sudo apt install python-dev libgirepository1.0-dev libcairo2-dev gir1.2-secret-1
+    - name: Install Linux dependencies for Python 3
+      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version != '2.7' }}
+      run: |
+        sudo apt update
+        sudo apt install python3-dev libgirepository1.0-dev libcairo2-dev gir1.2-secret-1
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip

@@ -26,6 +26,7 @@ class PersistedTokenCache(msal.SerializableTokenCache):
         self._persistence = persistence
         self._last_sync = 0  # _last_sync is a Unixtime
         self.is_encrypted = persistence.is_encrypted
+        self._reload_if_necessary()
 
     def _reload_if_necessary(self):
         # type: () -> None

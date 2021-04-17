@@ -41,13 +41,13 @@ jobs:
       if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == '2.7' }}
       run: |
         sudo apt update
-        sudo apt install python-dev libgirepository1.0-dev libcairo2-dev gir1.2-secret-1 python-gi
+        sudo apt install python-dev libgirepository1.0-dev libcairo2-dev gir1.2-secret-1 gnome-keyring
     - name: Install Linux dependencies for Python 3
       if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version != '2.7' }}
       run: |
         sudo apt update
-        sudo apt install python3-dev libgirepository1.0-dev libcairo2-dev gir1.2-secret-1 python3-gi
-    - name: Opt In to Install PyGObject
+        sudo apt install python3-dev libgirepository1.0-dev libcairo2-dev gir1.2-secret-1 gnome-keyring
+    - name: Install PyGObject on Linux
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
         python -m pip install --upgrade pip
@@ -55,7 +55,7 @@ jobs:
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install pylint tox
+        python -m pip install pylint tox pytest
         pip install .
     - name: Lint
       if: ${{ matrix.lint == 'true' }}
@@ -65,7 +65,15 @@ jobs:
         #flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         #flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test
+    - name: Test on Linux with encryption
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: |
+        # Don't know why, but the pytest and "." have to be re-installed again for them to be used
+        echo "echo secret_placeholder | gnome-keyring-daemon --unlock; pip install pytest .; pytest" > linux_test.sh
+        chmod +x linux_test.sh
+        sudo dbus-run-session -- ./linux_test.sh
+    - name: Test on other platforms without encryption
+      if: ${{ matrix.os != 'ubuntu-latest' }}
       env:
         TOXENV: ${{ matrix.toxenv }}
       run: |

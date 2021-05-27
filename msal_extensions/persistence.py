@@ -13,7 +13,7 @@ import logging
 import sys
 try:
     from pathlib import Path  # Built-in in Python 3
-except:
+except ImportError:
     from pathlib2 import Path  # An extra lib for Python 2
 
 
@@ -59,10 +59,12 @@ class PersistenceNotFound(IOError):  # Use IOError rather than OSError as base,
         # https://github.com/AzureAD/microsoft-authentication-extensions-for-python/blob/0.2.2/msal_extensions/token_cache.py#L38
         # Now we want to maintain backward compatibility even when using Python 2.x
         # It makes no difference in Python 3.3+ where IOError is an alias of OSError.
-    def __init__(
-            self,
-            err_no=errno.ENOENT, message="Persistence not found", location=None):
-        super(PersistenceNotFound, self).__init__(err_no, message, location)
+    """This happens when attempting BasePersistence.load() on a non-existent persistence instance"""
+    def __init__(self, err_no=None, message=None, location=None):
+        super(PersistenceNotFound, self).__init__(
+            err_no or errno.ENOENT,
+            message or "Persistence not found",
+            location)
 
 
 class BasePersistence(ABC):
@@ -220,7 +222,7 @@ class KeychainPersistence(BasePersistence):
             try:
                 return locker.get_generic_password(
                     self._service_name, self._account_name)
-            except self._KeychainError as ex:
+            except self._KeychainError as ex:  # pylint: disable=invalid-name
                 if ex.exit_status == self._KeychainError.ITEM_NOT_FOUND:
                     # This happens when a load() is called before a save().
                     # We map it into cross-platform error for unified catching.

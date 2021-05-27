@@ -4,11 +4,13 @@ import sys
 import errno
 import time
 import logging
-
-logger = logging.getLogger(__name__)
+from distutils.version import LooseVersion
+import warnings
 
 import portalocker
-from distutils.version import LooseVersion
+
+
+logger = logging.getLogger(__name__)
 
 
 class CrossPlatLock(object):
@@ -19,7 +21,8 @@ class CrossPlatLock(object):
     def __init__(self, lockfile_path):
         self._lockpath = lockfile_path
         # Support for passing through arguments to the open syscall was added in v1.4.0
-        open_kwargs = {'buffering': 0} if LooseVersion(portalocker.__version__) >= LooseVersion("1.4.0") else {}
+        open_kwargs = ({'buffering': 0}
+            if LooseVersion(portalocker.__version__) >= LooseVersion("1.4.0") else {})
         self._lock = portalocker.Lock(
             lockfile_path,
             mode='wb+',
@@ -31,6 +34,11 @@ class CrossPlatLock(object):
             **open_kwargs)
 
     def try_to_create_lock_file(self):
+        """Do not call this. It will be removed in next release"""
+        warnings.warn("try_to_create_lock_file() will be removed", DeprecationWarning)
+        return self._try_to_create_lock_file()
+
+    def _try_to_create_lock_file(self):
         timeout = 5
         check_interval = 0.25
         current_time = getattr(time, "monotonic", time.time)
@@ -48,7 +56,7 @@ class CrossPlatLock(object):
         return False
 
     def __enter__(self):
-        if not self.try_to_create_lock_file():
+        if not self._try_to_create_lock_file():
             logger.warning("Failed to create lock file")
         file_handle = self._lock.__enter__()
         file_handle.write('{} {}'.format(os.getpid(), sys.argv[0]).encode('utf-8'))

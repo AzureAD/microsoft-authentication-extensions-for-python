@@ -5,7 +5,7 @@
 import os
 import ctypes as _ctypes
 
-OS_RESULT = _ctypes.c_int32
+OS_RESULT = _ctypes.c_int32  # pylint: disable=invalid-name
 
 
 class KeychainError(OSError):

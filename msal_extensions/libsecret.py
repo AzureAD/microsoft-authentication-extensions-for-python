@@ -18,7 +18,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 try:
-    import gi  # https://github.com/AzureAD/microsoft-authentication-extensions-for-python/wiki/Encryption-on-Linux
+    import gi  # https://github.com/AzureAD/microsoft-authentication-extensions-for-python/wiki/Encryption-on-Linux  # pylint: disable=line-too-long
 except ImportError:
     logger.exception(
         """Runtime dependency of PyGObject is missing.
@@ -51,7 +51,7 @@ class LibSecretAgent(object):
             label="",  # Helpful when visualizing secrets by other viewers
             attribute_types=None,  # {name: SchemaAttributeType, ...}
             collection=None,  # None means default collection
-            ):  # pylint: disable=bad-continuation
+            ):
         """This agent is built on top of lower level libsecret API.
 
         Content stored via libsecret is associated with a bunch of attributes.
@@ -126,7 +126,8 @@ def trial_run():
         agent.save(payload)  # It would fail when running inside an SSH session
         assert agent.load() == payload  # This line is probably not reachable
         agent.clear()
-    except (gi.repository.GLib.Error, AssertionError):
+    except (gi.repository.GLib.Error, AssertionError):  # pylint: disable=no-member
+        # https://pygobject.readthedocs.io/en/latest/guide/api/error_handling.html#examples
         message = """libsecret did not perform properly.
 * If you encountered error "Remote error from secret service:
   org.freedesktop.DBus.Error.ServiceUnknown",

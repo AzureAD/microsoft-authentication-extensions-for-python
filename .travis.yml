@@ -9,18 +9,26 @@ matrix:
       before_install:
         - sudo apt update
         - sudo apt install python-dev libgirepository1.0-dev libcairo2-dev gir1.2-secret-1
+        - pip install --upgrade pip
     - python: "3.5"
       env: TOXENV=py35
       os: linux
       before_install:
         - sudo apt update
         - sudo apt install python3-dev libgirepository1.0-dev libcairo2-dev gir1.2-secret-1
-    - python: "3.6"
-      env: TOXENV=py36
-      os: linux
-      before_install:
-        - sudo apt update
-        - sudo apt install python3-dev libgirepository1.0-dev libcairo2-dev gir1.2-secret-1
+        - pip install --upgrade pip
+
+    ## Somehow cryptography is not able to be compiled and installed on Python 3.6
+    #- python: "3.6"
+    #  env:
+    #    - TOXENV=py36
+    #    - CRYPTOGRAPHY_DONT_BUILD_RUST=1
+    #  os: linux
+    #  before_install:
+    #    - sudo apt update
+    #    - sudo apt install python3-dev libgirepository1.0-dev libcairo2-dev gir1.2-secret-1
+    #    - pip install --upgrade pip
+
     - python: "3.7"
       env: TOXENV=py37
       os: linux
@@ -28,6 +36,7 @@ matrix:
       before_install:
         - sudo apt update
         - sudo apt install python3-dev libgirepository1.0-dev libcairo2-dev gir1.2-secret-1
+        - pip install --upgrade pip
     - python: "3.8"
       env: TOXENV=py38
       os: linux
@@ -35,6 +44,7 @@ matrix:
       before_install:
         - sudo apt update
         - sudo apt install python3-dev libgirepository1.0-dev libcairo2-dev gir1.2-secret-1
+        - pip install --upgrade pip
     - name: "Python 3.7 on macOS"
       env: TOXENV=py37
       os: osx
@@ -43,17 +53,23 @@ matrix:
     - name: "Python 2.7 on Windows"
       env: TOXENV=py27 PATH=/c/Python27:/c/Python27/Scripts:$PATH
       os: windows
-      before_install: choco install python2
+      before_install:
+        - choco install python2
+        - pip install --upgrade --user pip
       language: shell
     - name: "Python 3.5 on Windows"
       env: TOXENV=py35 PATH=/c/Python35:/c/Python35/Scripts:$PATH
       os: windows
-      before_install: choco install python3 --version 3.5.4
+      before_install:
+        - choco install python3 --version 3.5.4
+        - pip install --upgrade --user pip
       language: shell
     - name: "Python 3.7 on Windows"
       env: TOXENV=py37 PATH=/c/Python37:/c/Python37/Scripts:$PATH
       os: windows
-      before_install: choco install python3 --version 3.7.3
+      before_install:
+        - choco install python3 --version 3.7.3
+        - pip install --upgrade --user pip
       language: shell
 
 install:

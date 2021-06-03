@@ -5,6 +5,9 @@ from ctypes import wintypes
 _LOCAL_FREE = ctypes.windll.kernel32.LocalFree
 _GET_LAST_ERROR = ctypes.windll.kernel32.GetLastError
 _MEMCPY = ctypes.cdll.msvcrt.memcpy
+_MEMCPY.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t]  # Note:
+    # Suggested by https://github.com/AzureAD/microsoft-authentication-extensions-for-python/issues/85
+    # Matching https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/memcpy-wmemcpy?view=msvc-160
 _CRYPT_PROTECT_DATA = ctypes.windll.crypt32.CryptProtectData
 _CRYPT_UNPROTECT_DATA = ctypes.windll.crypt32.CryptUnprotectData
 _CRYPTPROTECT_UI_FORBIDDEN = 0x01

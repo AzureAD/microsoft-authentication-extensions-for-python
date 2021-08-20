@@ -22,8 +22,8 @@ setup(
     package_data={'': ['LICENSE']},
     install_requires=[
         'msal>=0.4.1,<2.0.0',
-        "portalocker~=1.6;platform_system=='Windows'",
-        "portalocker~=1.0;platform_system!='Windows'",
+        "portalocker>=1.6;platform_system=='Windows'",
+        "portalocker>=1.0;platform_system!='Windows'",
         "pathlib2;python_version<'3.0'",
         ## We choose to NOT define a hard dependency on this.
         # "pygobject>=3,<4;platform_system=='Linux'",

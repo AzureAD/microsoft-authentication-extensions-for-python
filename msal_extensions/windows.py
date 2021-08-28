@@ -70,7 +70,7 @@ class WindowsDataProtectionAgent(object):
 
         if _CRYPT_PROTECT_DATA(
                 ctypes.byref(message_blob),
-                u"python_data",
+                u"python_data",  # pylint: disable=redundant-u-string-prefix
                 entropy,
                 None,
                 None,

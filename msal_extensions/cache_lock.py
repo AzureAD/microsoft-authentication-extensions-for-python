@@ -45,7 +45,7 @@ class CrossPlatLock(object):
         timeout_end = current_time() + timeout
         while timeout_end > current_time():
             try:
-                with open(self._lockpath, 'x'):
+                with open(self._lockpath, 'x'):  # pylint: disable=unspecified-encoding
                     return True
             except ValueError:  # This needs to be the first clause, for Python 2 to hit it
                 logger.warning("Python 2 does not support atomic creation of file")

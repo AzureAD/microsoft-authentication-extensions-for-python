@@ -113,14 +113,14 @@ class FilePersistence(BasePersistence):
     def save(self, content):
         # type: (str) -> None
         """Save the content into this persistence"""
-        with open(self._location, 'w+') as handle:
+        with open(self._location, 'w+') as handle:  # pylint: disable=unspecified-encoding
             handle.write(content)
 
     def load(self):
         # type: () -> str
         """Load content from this persistence"""
         try:
-            with open(self._location, 'r') as handle:
+            with open(self._location, 'r') as handle:  # pylint: disable=unspecified-encoding
                 return handle.read()
         except EnvironmentError as exp:  # EnvironmentError in Py 2.7 works across platform
             if exp.errno == errno.ENOENT:

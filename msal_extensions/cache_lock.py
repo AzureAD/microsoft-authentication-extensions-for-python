@@ -33,11 +33,6 @@ class CrossPlatLock(object):
             flags=portalocker.LOCK_EX | portalocker.LOCK_NB,
             **open_kwargs)
 
-    def try_to_create_lock_file(self):
-        """Do not call this. It will be removed in next release"""
-        warnings.warn("try_to_create_lock_file() will be removed", DeprecationWarning)
-        return self._try_to_create_lock_file()
-
     def _try_to_create_lock_file(self):
         timeout = 5
         check_interval = 0.25

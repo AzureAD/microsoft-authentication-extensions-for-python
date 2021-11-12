@@ -21,10 +21,9 @@ class KeychainError(OSError):
         self.exit_status = exit_status
         # TODO: pylint: disable=fixme
         #  use SecCopyErrorMessageString to fetch the appropriate message here.
-        self.message = \
-            '{} ' \
-            'see https://opensource.apple.com/source/CarbonHeaders/CarbonHeaders-18.1/MacErrors.h'\
-                .format(self.exit_status)
+        self.message = (
+            '{} see https://opensource.apple.com/source/CarbonHeaders/CarbonHeaders-18.1/MacErrors.h'  # pylint: disable=consider-using-f-string,line-too-long
+            .format(self.exit_status))
 
 def _get_native_location(name):
     # type: (str) -> str
@@ -33,7 +32,7 @@ def _get_native_location(name):
     :param name: The name of the library to be loaded.
     :return: The location of the library on a MacOS filesystem.
     """
-    return '/System/Library/Frameworks/{0}.framework/{0}'.format(name)
+    return '/System/Library/Frameworks/{0}.framework/{0}'.format(name)  # pylint: disable=consider-using-f-string
 
 
 # Load native MacOS libraries

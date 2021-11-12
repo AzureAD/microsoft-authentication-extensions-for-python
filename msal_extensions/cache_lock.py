@@ -5,7 +5,6 @@ import errno
 import time
 import logging
 from distutils.version import LooseVersion
-import warnings
 
 import portalocker
 
@@ -33,16 +32,12 @@ class CrossPlatLock(object):
             flags=portalocker.LOCK_EX | portalocker.LOCK_NB,
             **open_kwargs)
 
-    def try_to_create_lock_file(self):
-        """Do not call this. It will be removed in next release"""
-        warnings.warn("try_to_create_lock_file() will be removed", DeprecationWarning)
-        return self._try_to_create_lock_file()
-
     def _try_to_create_lock_file(self):
         timeout = 5
         check_interval = 0.25
         current_time = getattr(time, "monotonic", time.time)
         timeout_end = current_time() + timeout
+        pid = os.getpid()
         while timeout_end > current_time():
             try:
                 with open(self._lockpath, 'x'):  # pylint: disable=unspecified-encoding
@@ -51,15 +46,18 @@ class CrossPlatLock(object):
                 logger.warning("Python 2 does not support atomic creation of file")
                 return False
             except FileExistsError:  # Only Python 3 will reach this clause
-                logger.warning("Lock file exists, trying again after some time")
+                logger.debug(
+                    "Process %d found existing lock file, will retry after %f second",
+                    pid, check_interval)
                 time.sleep(check_interval)
         return False
 
     def __enter__(self):
+        pid = os.getpid()
         if not self._try_to_create_lock_file():
-            logger.warning("Failed to create lock file")
+            logger.warning("Process %d failed to create lock file", pid)
         file_handle = self._lock.__enter__()
-        file_handle.write('{} {}'.format(os.getpid(), sys.argv[0]).encode('utf-8'))
+        file_handle.write('{} {}'.format(pid, sys.argv[0]).encode('utf-8'))  # pylint: disable=consider-using-f-string
         return file_handle
 
     def __exit__(self, *args):
@@ -70,5 +68,5 @@ class CrossPlatLock(object):
             # file for itself.
             os.remove(self._lockpath)
         except OSError as ex:  # pylint: disable=invalid-name
-            if ex.errno != errno.ENOENT and ex.errno != errno.EACCES:
+            if ex.errno not in (errno.ENOENT, errno.EACCES):
                 raise

@@ -227,7 +227,7 @@ class KeychainPersistence(BasePersistence):
                     # This happens when a load() is called before a save().
                     # We map it into cross-platform error for unified catching.
                     raise PersistenceNotFound(
-                        location="Service:{} Account:{}".format(
+                        location="Service:{} Account:{}".format(  # pylint: disable=consider-using-f-string
                             self._service_name, self._account_name),
                         message=(
                             "Keychain persistence not initialized. "

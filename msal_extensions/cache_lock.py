@@ -5,7 +5,6 @@ import errno
 import time
 import logging
 from distutils.version import LooseVersion
-import warnings
 
 import portalocker
 
@@ -58,7 +57,7 @@ class CrossPlatLock(object):
         if not self._try_to_create_lock_file():
             logger.warning("Process %d failed to create lock file", pid)
         file_handle = self._lock.__enter__()
-        file_handle.write('{} {}'.format(pid, sys.argv[0]).encode('utf-8'))
+        file_handle.write('{} {}'.format(pid, sys.argv[0]).encode('utf-8'))  # pylint: disable=consider-using-f-string
         return file_handle
 
     def __exit__(self, *args):
@@ -69,5 +68,5 @@ class CrossPlatLock(object):
             # file for itself.
             os.remove(self._lockpath)
         except OSError as ex:  # pylint: disable=invalid-name
-            if ex.errno != errno.ENOENT and ex.errno != errno.EACCES:
+            if ex.errno not in (errno.ENOENT, errno.EACCES):
                 raise

@@ -73,9 +73,21 @@ class PersistedTokenCache(msal.SerializableTokenCache):
             self._last_sync = time.time()
 
     def find(self, credential_type, **kwargs):  # pylint: disable=arguments-differ
-        with CrossPlatLock(self._lock_location):
-            self._reload_if_necessary()
-            return super(PersistedTokenCache, self).find(credential_type, **kwargs)
+        # Use optimistic locking rather than CrossPlatLock(self._lock_location)
+        retry = 3
+        for attempt in range(1, retry + 1):
+            try:
+                self._reload_if_necessary()
+            except Exception:  # pylint: disable=broad-except
+                # Presumably other processes are writing the file, causing dirty read
+                if attempt < retry:
+                    logger.debug("Unable to load token cache file in No. %d attempt", attempt)
+                    time.sleep(0.5)
+                else:
+                    raise  # End of retry. Re-raise the exception as-is.
+            else:  # If reload encountered no error, the data is considered intact
+                return super(PersistedTokenCache, self).find(credential_type, **kwargs)
+        return []  # Not really reachable here. Just to keep pylint happy.
 
 
 class FileTokenCache(PersistedTokenCache):

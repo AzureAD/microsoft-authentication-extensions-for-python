@@ -54,8 +54,7 @@ def test_nonexistent_file_persistence_with_data_protection(temp_location):
     not sys.platform.startswith('darwin'),
     reason="Requires OSX. Whether running on TRAVIS CI does not seem to matter.")
 def test_keychain_persistence(temp_location):
-    _test_persistence_roundtrip(KeychainPersistence(
-        temp_location, "my_service_name", "my_account_name"))
+    _test_persistence_roundtrip(KeychainPersistence(temp_location))
 
 @pytest.mark.skipif(
     not sys.platform.startswith('darwin'),
@@ -69,11 +68,7 @@ def test_nonexistent_keychain_persistence(temp_location):
     is_running_on_travis_ci or not sys.platform.startswith('linux'),
     reason="Requires Linux Desktop. Headless or SSH session won't work.")
 def test_libsecret_persistence(temp_location):
-    _test_persistence_roundtrip(LibsecretPersistence(
-        temp_location,
-        "my_schema_name",
-        {"my_attr_1": "foo", "my_attr_2": "bar"},
-        ))
+    _test_persistence_roundtrip(LibsecretPersistence(temp_location))
 
 @pytest.mark.skipif(
     is_running_on_travis_ci or not sys.platform.startswith('linux'),

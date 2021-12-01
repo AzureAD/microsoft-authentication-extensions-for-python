@@ -9,6 +9,7 @@ app developer would naturally know whether the data are protected by encryption.
 import abc
 import os
 import errno
+import hashlib
 import logging
 import sys
 try:
@@ -49,6 +50,9 @@ def _mkdir_p(path):
             pass
         else:
             raise
+
+def _auto_hash(input_string):
+    return hashlib.sha256(input_string.encode('utf-8')).hexdigest()
 
 
 # We do not aim to wrap every os-specific exception.
@@ -197,19 +201,18 @@ class KeychainPersistence(BasePersistence):
     and protected by native Keychain libraries on OSX"""
     is_encrypted = True
 
-    def __init__(self, signal_location, service_name, account_name):
+    def __init__(self, signal_location, service_name=None, account_name=None):
         """Initialization could fail due to unsatisfied dependency.
 
         :param signal_location: See :func:`persistence.LibsecretPersistence.__init__`
         """
-        if not (service_name and account_name):  # It would hang on OSX
-            raise ValueError("service_name and account_name are required")
         from .osx import Keychain, KeychainError  # pylint: disable=import-outside-toplevel
         self._file_persistence = FilePersistence(signal_location)  # Favor composition
         self._Keychain = Keychain  # pylint: disable=invalid-name
         self._KeychainError = KeychainError  # pylint: disable=invalid-name
-        self._service_name = service_name
-        self._account_name = account_name
+        default_service_name = "msal-extensions"  # This is also our package name
+        self._service_name = service_name or default_service_name
+        self._account_name = account_name or _auto_hash(signal_location)
 
     def save(self, content):
         with self._Keychain() as locker:
@@ -247,7 +250,7 @@ class LibsecretPersistence(BasePersistence):
     and protected by native libsecret libraries on Linux"""
     is_encrypted = True
 
-    def __init__(self, signal_location, schema_name, attributes, **kwargs):
+    def __init__(self, signal_location, schema_name=None, attributes=None, **kwargs):
         """Initialization could fail due to unsatisfied dependency.
 
         :param string signal_location:
@@ -262,7 +265,8 @@ class LibsecretPersistence(BasePersistence):
         from .libsecret import (  # This uncertain import is deferred till runtime
             LibSecretAgent, trial_run)
         trial_run()
-        self._agent = LibSecretAgent(schema_name, attributes, **kwargs)
+        self._agent = LibSecretAgent(
+            schema_name or _auto_hash(signal_location), attributes or {}, **kwargs)
         self._file_persistence = FilePersistence(signal_location)  # Favor composition
 
     def save(self, content):

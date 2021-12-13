@@ -2,8 +2,14 @@
 import os
 import sys
 import errno
-import portalocker
+import time
+import logging
 from distutils.version import LooseVersion
+
+import portalocker
+
+
+logger = logging.getLogger(__name__)
 
 
 class CrossPlatLock(object):
@@ -14,7 +20,8 @@ class CrossPlatLock(object):
     def __init__(self, lockfile_path):
         self._lockpath = lockfile_path
         # Support for passing through arguments to the open syscall was added in v1.4.0
-        open_kwargs = {'buffering': 0} if LooseVersion(portalocker.__version__) >= LooseVersion("1.4.0") else {}
+        open_kwargs = ({'buffering': 0}
+            if LooseVersion(portalocker.__version__) >= LooseVersion("1.4.0") else {})
         self._lock = portalocker.Lock(
             lockfile_path,
             mode='wb+',
@@ -25,9 +32,32 @@ class CrossPlatLock(object):
             flags=portalocker.LOCK_EX | portalocker.LOCK_NB,
             **open_kwargs)
 
+    def _try_to_create_lock_file(self):
+        timeout = 5
+        check_interval = 0.25
+        current_time = getattr(time, "monotonic", time.time)
+        timeout_end = current_time() + timeout
+        pid = os.getpid()
+        while timeout_end > current_time():
+            try:
+                with open(self._lockpath, 'x'):  # pylint: disable=unspecified-encoding
+                    return True
+            except ValueError:  # This needs to be the first clause, for Python 2 to hit it
+                logger.warning("Python 2 does not support atomic creation of file")
+                return False
+            except FileExistsError:  # Only Python 3 will reach this clause
+                logger.debug(
+                    "Process %d found existing lock file, will retry after %f second",
+                    pid, check_interval)
+                time.sleep(check_interval)
+        return False
+
     def __enter__(self):
+        pid = os.getpid()
+        if not self._try_to_create_lock_file():
+            logger.warning("Process %d failed to create lock file", pid)
         file_handle = self._lock.__enter__()
-        file_handle.write('{} {}'.format(os.getpid(), sys.argv[0]).encode('utf-8'))
+        file_handle.write('{} {}'.format(pid, sys.argv[0]).encode('utf-8'))  # pylint: disable=consider-using-f-string
         return file_handle
 
     def __exit__(self, *args):
@@ -38,5 +68,5 @@ class CrossPlatLock(object):
             # file for itself.
             os.remove(self._lockpath)
         except OSError as ex:  # pylint: disable=invalid-name
-            if ex.errno != errno.ENOENT and ex.errno != errno.EACCES:
+            if ex.errno not in (errno.ENOENT, errno.EACCES):
                 raise

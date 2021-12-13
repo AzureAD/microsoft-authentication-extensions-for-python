@@ -10,9 +10,10 @@ import abc
 import os
 import errno
 import logging
+import sys
 try:
     from pathlib import Path  # Built-in in Python 3
-except:
+except ImportError:
     from pathlib2 import Path  # An extra lib for Python 2
 
 
@@ -28,14 +29,19 @@ logger = logging.getLogger(__name__)
 def _mkdir_p(path):
     """Creates a directory, and any necessary parents.
 
-    This implementation based on a Stack Overflow question that can be found here:
-    https://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python
-
     If the path provided is an existing file, this function raises an exception.
     :param path: The directory name that should be created.
     """
     if not path:
         return  # NO-OP
+
+    if sys.version_info >= (3, 2):
+        os.makedirs(path, exist_ok=True)
+        return
+
+    # This fallback implementation is based on a Stack Overflow question:
+    # https://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python
+    # Known issue: it won't work when the path is a root folder like "C:\\"
     try:
         os.makedirs(path)
     except OSError as exp:
@@ -53,10 +59,12 @@ class PersistenceNotFound(IOError):  # Use IOError rather than OSError as base,
         # https://github.com/AzureAD/microsoft-authentication-extensions-for-python/blob/0.2.2/msal_extensions/token_cache.py#L38
         # Now we want to maintain backward compatibility even when using Python 2.x
         # It makes no difference in Python 3.3+ where IOError is an alias of OSError.
-    def __init__(
-            self,
-            err_no=errno.ENOENT, message="Persistence not found", location=None):
-        super(PersistenceNotFound, self).__init__(err_no, message, location)
+    """This happens when attempting BasePersistence.load() on a non-existent persistence instance"""
+    def __init__(self, err_no=None, message=None, location=None):
+        super(PersistenceNotFound, self).__init__(
+            err_no or errno.ENOENT,
+            message or "Persistence not found",
+            location)
 
 
 class BasePersistence(ABC):
@@ -105,14 +113,14 @@ class FilePersistence(BasePersistence):
     def save(self, content):
         # type: (str) -> None
         """Save the content into this persistence"""
-        with open(self._location, 'w+') as handle:
+        with open(self._location, 'w+') as handle:  # pylint: disable=unspecified-encoding
             handle.write(content)
 
     def load(self):
         # type: () -> str
         """Load content from this persistence"""
         try:
-            with open(self._location, 'r') as handle:
+            with open(self._location, 'r') as handle:  # pylint: disable=unspecified-encoding
                 return handle.read()
         except EnvironmentError as exp:  # EnvironmentError in Py 2.7 works across platform
             if exp.errno == errno.ENOENT:
@@ -214,12 +222,12 @@ class KeychainPersistence(BasePersistence):
             try:
                 return locker.get_generic_password(
                     self._service_name, self._account_name)
-            except self._KeychainError as ex:
+            except self._KeychainError as ex:  # pylint: disable=invalid-name
                 if ex.exit_status == self._KeychainError.ITEM_NOT_FOUND:
                     # This happens when a load() is called before a save().
                     # We map it into cross-platform error for unified catching.
                     raise PersistenceNotFound(
-                        location="Service:{} Account:{}".format(
+                        location="Service:{} Account:{}".format(  # pylint: disable=consider-using-f-string
                             self._service_name, self._account_name),
                         message=(
                             "Keychain persistence not initialized. "

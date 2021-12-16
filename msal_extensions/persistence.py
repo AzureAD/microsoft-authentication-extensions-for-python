@@ -108,17 +108,42 @@ class BasePersistence(ABC):
 class FilePersistence(BasePersistence):
     """A generic persistence, storing data in a plain-text file"""
 
-    def __init__(self, location):
+    def __init__(self, location, data_conversion=None, lock=None):
         if not location:
             raise ValueError("Requires a file path")
         self._location = os.path.expanduser(location)
         _mkdir_p(os.path.dirname(self._location))
+        self._conversion = data_conversion
+        self._lock = lock
+
+    def _save(self, content):
+        # type: (str) -> None
+        """Save the content into this persistence"""
+        # TODO: Trying to backport most of this logic to here, in order to simplify caller's life
+        # https://github.com/Azure/azure-cli/pull/20722/files
+        # The goal is to simplify the current http_cache calling pattern
+        #       https://github.com/AzureAD/microsoft-authentication-library-for-python/blob/1.16.0/msal/application.py#L360-L375
+        # into minimum:
+        #       http_cache_persistence = FilePersistence(...)
+        #       http_cache = http_cache_persistence.load(default={})
+        #       atexit.register(http_cache_persistence.save)
+        if self._conversion:
+            payload = self._conversion.dumps(content)  # TODO: json.dumps() yields str, pickle.dumps() yields binary, how/whether do we support both?
+            mode = "wb+"
+        else:
+            payload = content
+            mode = "w+"
+        with open(self._location, mode) as handle:  # pylint: disable=unspecified-encoding
+            handle.write(payload)
 
     def save(self, content):
         # type: (str) -> None
         """Save the content into this persistence"""
-        with open(self._location, 'w+') as handle:  # pylint: disable=unspecified-encoding
-            handle.write(content)
+        if self._lock:
+            with self._lock:
+                return self._save(content)
+        else:
+            return self._save(content)
 
     def load(self):
         # type: () -> str

@@ -28,7 +28,11 @@ def build_persistence(location, fallback_to_plaintext=False):
             logging.warning("Encryption unavailable. Opting in to plain text.")
     return FilePersistence(location)
 
-persistence = build_persistence("storage.bin", fallback_to_plaintext=False)
+persistence = build_persistence(
+    "storage.bin", fallback_to_plaintext=False,
+    data_conversion=json,
+    lock=CrossPlatLock("my_another_lock.txt"),
+    )
 print("Type of persistence: {}".format(persistence.__class__.__name__))
 print("Is this persistence encrypted?", persistence.is_encrypted)
 
@@ -38,7 +42,10 @@ data = {  # It can be anything, here we demonstrate an arbitrary json object
     "service_principle_1": "blah blah...",
     }
 
+persistence.save(data)
+assert persistence.load(default={}) == data
+"""
 with CrossPlatLock("my_another_lock.txt"):
     persistence.save(json.dumps(data))
     assert json.loads(persistence.load()) == data
-
+"""

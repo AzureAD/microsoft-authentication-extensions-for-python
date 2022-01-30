@@ -105,6 +105,11 @@ class BasePersistence(ABC):
         raise NotImplementedError
 
 
+def _open(location):
+    return os.open(location, os.O_RDWR | os.O_CREAT | os.O_TRUNC, 0o600)
+        # The 600 seems no-op on NTFS/Windows, and that is fine
+
+
 class FilePersistence(BasePersistence):
     """A generic persistence, storing data in a plain-text file"""
 
@@ -117,7 +122,7 @@ class FilePersistence(BasePersistence):
     def save(self, content):
         # type: (str) -> None
         """Save the content into this persistence"""
-        with open(self._location, 'w+') as handle:  # pylint: disable=unspecified-encoding
+        with os.fdopen(_open(self._location), 'w+') as handle:
             handle.write(content)
 
     def load(self):
@@ -173,7 +178,7 @@ class FilePersistenceWithDataProtection(FilePersistence):
     def save(self, content):
         # type: (str) -> None
         data = self._dp_agent.protect(content)
-        with open(self._location, 'wb+') as handle:
+        with os.fdopen(_open(self._location), 'wb+') as handle:
             handle.write(data)
 
     def load(self):

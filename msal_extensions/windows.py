@@ -39,6 +39,15 @@ class DataBlob(ctypes.Structure):  # pylint: disable=too-few-public-methods
         _MEMCPY(blob_buffer, pb_data, cb_data)
         return blob_buffer.raw
 
+_err_description = {
+    # Keys came from real world observation, values came from winerror.h (http://errors (Microsoft internal))
+    -2146893813: "Key not valid for use in specified state.",
+    -2146892987: "The requested operation cannot be completed. "
+        "The computer must be trusted for delegation and "
+        "the current user account must be configured to allow delegation. "
+        "See also https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/enable-computer-and-user-accounts-to-be-trusted-for-delegation",
+    13: "The data is invalid",
+    }
 
 # This code is modeled from a StackOverflow question, which can be found here:
 # https://stackoverflow.com/questions/463832/using-dpapi-with-python
@@ -82,7 +91,7 @@ class WindowsDataProtectionAgent(object):
                 _LOCAL_FREE(result.pbData)
 
         err_code = _GET_LAST_ERROR()
-        raise OSError(256, '', '', err_code)
+        raise OSError(None, _err_description.get(err_code), None, err_code)
 
     def unprotect(self, cipher_text):
         # type: (bytes) -> str
@@ -111,4 +120,4 @@ class WindowsDataProtectionAgent(object):
             finally:
                 _LOCAL_FREE(result.pbData)
         err_code = _GET_LAST_ERROR()
-        raise OSError(256, '', '', err_code)
+        raise OSError(None, _err_description.get(err_code), None, err_code)

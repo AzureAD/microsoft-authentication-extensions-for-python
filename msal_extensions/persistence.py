@@ -56,19 +56,31 @@ def _auto_hash(input_string):
 
 
 # We do not aim to wrap every os-specific exception.
-# Here we define only the most common one,
-# otherwise caller would need to catch os-specific persistence exceptions.
-class PersistenceNotFound(IOError):  # Use IOError rather than OSError as base,
+# Here we standardize only the most common ones,
+# otherwise caller would need to catch os-specific underlying exceptions.
+class PersistenceError(IOError):  # Use IOError rather than OSError as base,
+    """The base exception for persistence."""
         # because historically an IOError was bubbled up and expected.
         # https://github.com/AzureAD/microsoft-authentication-extensions-for-python/blob/0.2.2/msal_extensions/token_cache.py#L38
         # Now we want to maintain backward compatibility even when using Python 2.x
         # It makes no difference in Python 3.3+ where IOError is an alias of OSError.
+    def __init__(self, err_no=None, message=None, location=None):  # pylint: disable=useless-super-delegation
+        super(PersistenceError, self).__init__(err_no, message, location)
+
+
+class PersistenceNotFound(PersistenceError):
     """This happens when attempting BasePersistence.load() on a non-existent persistence instance"""
     def __init__(self, err_no=None, message=None, location=None):
         super(PersistenceNotFound, self).__init__(
-            err_no or errno.ENOENT,
-            message or "Persistence not found",
-            location)
+            err_no=errno.ENOENT,
+            message=message or "Persistence not found",
+            location=location)
+
+class PersistenceEncryptionError(PersistenceError):
+    """This could be raised by persistence.save()"""
+
+class PersistenceDecryptionError(PersistenceError):
+    """This could be raised by persistence.load()"""
 
 
 class BasePersistence(ABC):
@@ -177,7 +189,12 @@ class FilePersistenceWithDataProtection(FilePersistence):
 
     def save(self, content):
         # type: (str) -> None
-        data = self._dp_agent.protect(content)
+        try:
+            data = self._dp_agent.protect(content)
+        except OSError as exception:
+            raise PersistenceEncryptionError(
+                err_no=getattr(exception, "winerror", None),  # Exists in Python 3 on Windows
+                message="Unable to encrypt data. You may consider disable encryption.")
         with os.fdopen(_open(self._location), 'wb+') as handle:
             handle.write(data)
 
@@ -186,7 +203,6 @@ class FilePersistenceWithDataProtection(FilePersistence):
         try:
             with open(self._location, 'rb') as handle:
                 data = handle.read()
-            return self._dp_agent.unprotect(data)
         except EnvironmentError as exp:  # EnvironmentError in Py 2.7 works across platform
             if exp.errno == errno.ENOENT:
                 raise PersistenceNotFound(
@@ -199,6 +215,14 @@ class FilePersistenceWithDataProtection(FilePersistence):
                 "DPAPI error likely caused by file content not previously encrypted. "
                 "App developer should migrate by calling save(plaintext) first.")
             raise
+        try:
+            return self._dp_agent.unprotect(data)
+        except OSError as exception:
+            raise PersistenceDecryptionError(
+                err_no=getattr(exception, "winerror", None),  # Exists in Python 3 on Windows
+                message="Unable to decrypt data. You may have to delete the file.",
+                location=self._location,
+                )
 
 
 class KeychainPersistence(BasePersistence):

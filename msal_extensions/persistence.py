@@ -194,7 +194,8 @@ class FilePersistenceWithDataProtection(FilePersistence):
         except OSError as exception:
             raise PersistenceEncryptionError(
                 err_no=getattr(exception, "winerror", None),  # Exists in Python 3 on Windows
-                message="Unable to encrypt data. You may consider disable encryption.")
+                message="Encryption failed: {}. Consider disable encryption.".format(exception),  # pylint: disable=consider-using-f-string
+                )
         with os.fdopen(_open(self._location), 'wb+') as handle:
             handle.write(data)
 
@@ -220,7 +221,7 @@ class FilePersistenceWithDataProtection(FilePersistence):
         except OSError as exception:
             raise PersistenceDecryptionError(
                 err_no=getattr(exception, "winerror", None),  # Exists in Python 3 on Windows
-                message="Unable to decrypt data. You may have to delete the file.",
+                message="Decryption failed: {}. You may have to delete the file.".format(exception),  # pylint: disable=consider-using-f-string
                 location=self._location,
                 )
 

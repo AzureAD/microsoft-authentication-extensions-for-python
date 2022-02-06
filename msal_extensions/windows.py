@@ -46,6 +46,7 @@ _err_description = {
         "The computer must be trusted for delegation and "
         "the current user account must be configured to allow delegation. "
         "See also https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/enable-computer-and-user-accounts-to-be-trusted-for-delegation",
+    13: "The data is invalid",
     }
 
 # This code is modeled from a StackOverflow question, which can be found here:

@@ -3,6 +3,7 @@ __version__ = "0.3.1"
 
 from .persistence import (
     FilePersistence,
+    build_encrypted_persistence,
     FilePersistenceWithDataProtection,
     KeychainPersistence,
     LibsecretPersistence,

@@ -83,6 +83,22 @@ class PersistenceDecryptionError(PersistenceError):
     """This could be raised by persistence.load()"""
 
 
+def build_encrypted_persistence(location):
+    """Build a suitable encrypted persistence instance based your current OS.
+
+    If you do not need encryption, then simply use ``FilePersistence`` constructor.
+    """
+    # Does not (yet?) support fallback_to_plaintext flag,
+    # because the persistence on Windows and macOS do not support built-in trial_run().
+    if sys.platform.startswith('win'):
+        return FilePersistenceWithDataProtection(location)
+    if sys.platform.startswith('darwin'):
+        return KeychainPersistence(location)
+    if sys.platform.startswith('linux'):
+        return LibsecretPersistence(location)
+    raise RuntimeError("Unsupported platform: {}".format(sys.platform))  # pylint: disable=consider-using-f-string
+
+
 class BasePersistence(ABC):
     """An abstract persistence defining the common interface of this family"""
 

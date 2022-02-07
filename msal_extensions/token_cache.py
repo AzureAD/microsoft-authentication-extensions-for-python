@@ -1,15 +1,12 @@
 """Generic functions and types for working with a TokenCache that is not platform specific."""
 import os
-import warnings
 import time
 import logging
 
 import msal
 
 from .cache_lock import CrossPlatLock
-from .persistence import (
-    _mkdir_p, PersistenceNotFound, FilePersistence,
-    FilePersistenceWithDataProtection, KeychainPersistence)
+from .persistence import _mkdir_p, PersistenceNotFound
 
 
 logger = logging.getLogger(__name__)

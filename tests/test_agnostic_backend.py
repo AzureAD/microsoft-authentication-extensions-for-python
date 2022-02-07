@@ -34,18 +34,16 @@ def _test_token_cache_roundtrip(cache):
     assert token1['access_token'] == token2['access_token']
 
 def test_file_token_cache_roundtrip(temp_location):
-    from msal_extensions.token_cache import FileTokenCache
-    _test_token_cache_roundtrip(FileTokenCache(temp_location))
+    _test_token_cache_roundtrip(PersistedTokenCache(FilePersistence(temp_location)))
 
-def test_current_platform_cache_roundtrip_with_alias_class(temp_location):
-    from msal_extensions import TokenCache
-    _test_token_cache_roundtrip(TokenCache(temp_location))
+def test_current_platform_cache_roundtrip_with_persistence_builder(temp_location):
+    _test_token_cache_roundtrip(PersistedTokenCache(build_encrypted_persistence(temp_location)))
 
 def test_persisted_token_cache(temp_location):
     _test_token_cache_roundtrip(PersistedTokenCache(FilePersistence(temp_location)))
 
 def test_file_not_found_error_is_not_raised():
     persistence = FilePersistence('non_existing_file')
-    cache = PersistedTokenCache(persistence=persistence)
+    cache = PersistedTokenCache(persistence)
     # An exception raised here will fail the test case as it is supposed to be a NO-OP
     cache.find('')

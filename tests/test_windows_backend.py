@@ -11,7 +11,8 @@ if not sys.platform.startswith('win'):
     pytest.skip('skipping windows-only tests', allow_module_level=True)
 else:
     from msal_extensions.windows import WindowsDataProtectionAgent
-    from msal_extensions.token_cache import WindowsTokenCache
+    from msal_extensions.token_cache import PersistedTokenCache
+    from msal_extensions.persistence import FilePersistenceWithDataProtection
 
 
 def test_dpapi_roundtrip_with_entropy():
@@ -48,8 +49,7 @@ def test_dpapi_roundtrip_with_entropy():
 
 def test_read_msal_cache_direct():
     """
-    This loads and unprotects an MSAL cache directly, only using the DataProtectionAgent. It is not meant to test the
-    wrapper `WindowsTokenCache`.
+    This loads and unprotects an MSAL cache directly, only using the DataProtectionAgent.
     """
     localappdata_location = os.getenv('LOCALAPPDATA', os.path.expanduser('~'))
     cache_locations = [
@@ -87,12 +87,12 @@ def test_windows_token_cache_roundtrip():
     client_id = os.getenv('AZURE_CLIENT_ID')
     client_secret = os.getenv('AZURE_CLIENT_SECRET')
     if not (client_id and client_secret):
-        pytest.skip('no credentials present to test WindowsTokenCache round-trip with.')
+        pytest.skip('no credentials present to test PersistedTokenCache round-trip with.')
 
     test_folder = tempfile.mkdtemp(prefix="msal_extension_test_windows_token_cache_roundtrip")
     cache_file = os.path.join(test_folder, 'msal.cache')
     try:
-        subject = WindowsTokenCache(cache_location=cache_file)
+        subject = PersistedTokenCache(FilePersistenceWithDataProtection(cache_file))
         app = msal.ConfidentialClientApplication(
             client_id=client_id,
             client_credential=client_secret,

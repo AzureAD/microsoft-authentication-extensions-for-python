@@ -1,11 +1,11 @@
 
 # Microsoft Authentication Extensions for Python
 
-The Microsoft Authentication Extensions for Python offers secure mechanisms for client applications to perform cross-platform token cache serialization and persistence. It gives additional support to the [Microsoft Authentication Library for Python (MSAL)](https://github.com/AzureAD/microsoft-authentication-library-for-python). 
+The Microsoft Authentication Extensions for Python offers secure mechanisms for client applications to perform cross-platform token cache serialization and persistence. It gives additional support to the [Microsoft Authentication Library for Python (MSAL)](https://github.com/AzureAD/microsoft-authentication-library-for-python).
 
 MSAL Python supports an in-memory cache by default and provides the [SerializableTokenCache](https://msal-python.readthedocs.io/en/latest/#msal.SerializableTokenCache) to perform cache serialization. You can read more about this in the MSAL Python [documentation](https://docs.microsoft.com/en-us/azure/active-directory/develop/msal-python-token-cache-serialization). Developers are required to implement their own cache persistance across multiple platforms and Microsoft Authentication Extensions makes this simpler.
 
-The supported platforms are Windows, Mac and Linux. 
+The supported platforms are Windows, Mac and Linux.
 - Windows - [DPAPI](https://docs.microsoft.com/en-us/dotnet/standard/security/how-to-use-data-protection) is used for encryption.
 - MAC - The MAC KeyChain is used.
 - Linux - [LibSecret](https://wiki.gnome.org/Projects/Libsecret) is used for encryption.
@@ -28,7 +28,9 @@ You can find the changes for each version under
 
 ## Usage
 
-The Microsoft Authentication Extensions library provides the `PersistedTokenCache` which accepts a platform-dependent persistence instance. This token cache can then be used to instantiate the `PublicClientApplication` in MSAL Python. 
+### Creating an encrypted token cache file to be used by MSAL
+
+The Microsoft Authentication Extensions library provides the `PersistedTokenCache` which accepts a platform-dependent persistence instance. This token cache can then be used to instantiate the `PublicClientApplication` in MSAL Python.
 
 The token cache includes a file lock, and auto-reload behavior under the hood.
 
@@ -39,24 +41,16 @@ Here is an example of this pattern for multiple platforms (taken from the comple
 ```python
 def build_persistence(location, fallback_to_plaintext=False):
     """Build a suitable persistence instance based your current OS"""
-    if sys.platform.startswith('win'):
-        return FilePersistenceWithDataProtection(location)
-    if sys.platform.startswith('darwin'):
-        return KeychainPersistence(location, "my_service_name", "my_account_name")
-    if sys.platform.startswith('linux'):
-        try:
-            return LibsecretPersistence(
-                location,
-                schema_name="my_schema_name",
-                attributes={"my_attr1": "foo", "my_attr2": "bar"},
-                )
-        except:  # pylint: disable=bare-except
-            if not fallback_to_plaintext:
-                raise
-            logging.exception("Encryption unavailable. Opting in to plain text.")
-    return FilePersistence(location)
+    try:
+        return build_encrypted_persistence(location)
+    except:
+        if not fallback_to_plaintext:
+            raise
+        logging.warning("Encryption unavailable. Opting in to plain text.")
+        return FilePersistence(location)
 
 persistence = build_persistence("token_cache.bin")
+print("Type of persistence: {}".format(persistence.__class__.__name__))
 print("Is this persistence encrypted?", persistence.is_encrypted)
 
 cache = PersistedTokenCache(persistence)
@@ -65,6 +59,36 @@ Now you can use it in an MSAL application like this:
 ```python
 app = msal.PublicClientApplication("my_client_id", token_cache=cache)
 ```
+
+### Creating an encrypted persistence file to store your own data
+
+Here is an example of this pattern for multiple platforms (taken from the complete [sample here](https://github.com/AzureAD/microsoft-authentication-extensions-for-python/blob/dev/sample/persistence_sample.py)):
+
+```python
+def build_persistence(location, fallback_to_plaintext=False):
+    """Build a suitable persistence instance based your current OS"""
+    try:
+        return build_encrypted_persistence(location)
+    except:  # pylint: disable=bare-except
+        if not fallback_to_plaintext:
+            raise
+        logging.warning("Encryption unavailable. Opting in to plain text.")
+        return FilePersistence(location)
+
+persistence = build_persistence("storage.bin", fallback_to_plaintext=False)
+print("Type of persistence: {}".format(persistence.__class__.__name__))
+print("Is this persistence encrypted?", persistence.is_encrypted)
+
+data = {  # It can be anything, here we demonstrate an arbitrary json object
+    "foo": "hello world",
+    "bar": "",
+    "service_principle_1": "blah blah...",
+    }
+
+persistence.save(json.dumps(data))
+assert json.loads(persistence.load()) == data
+```
+
 
 ## Community Help and Support
 

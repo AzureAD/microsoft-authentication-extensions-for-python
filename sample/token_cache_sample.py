@@ -12,7 +12,9 @@ def build_persistence(location, fallback_to_plaintext=False):
     try:
         return build_encrypted_persistence(location)
     except:  # pylint: disable=bare-except
-        # Known issue: Currently, only Linux
+        # On Linux, encryption exception will be raised during initialization.
+        # On Windows and macOS, they won't be detected here,
+        # but will be raised during their load() or save().
         if not fallback_to_plaintext:
             raise
         logging.warning("Encryption unavailable. Opting in to plain text.")

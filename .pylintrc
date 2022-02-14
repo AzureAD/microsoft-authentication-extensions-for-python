@@ -2,6 +2,7 @@
 good-names=
     logger
 disable=
+    consider-using-f-string,  # For Python < 3.6
     super-with-arguments,  # For Python 2.x
     raise-missing-from,  # For Python 2.x
     trailing-newlines,

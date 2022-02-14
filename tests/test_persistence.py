@@ -9,11 +9,18 @@ import pytest
 from msal_extensions.persistence import *
 
 
-is_running_on_travis_ci = bool(  # (WTF) What-The-Finding:
+def _is_env_var_defined(env_var):
+    return bool(  # (WTF) What-The-Finding:
     # The bool(...) is necessary, otherwise skipif(...) would treat "true" as
     # string conditions and then raise an undefined "true" exception.
     # https://docs.pytest.org/en/latest/historical-notes.html#string-conditions
-    os.getenv("TRAVIS"))
+        os.getenv(env_var))
+
+
+# Note: If you use tox, remember to pass them through via tox.ini
+# https://tox.wiki/en/latest/example/basic.html#passing-down-environment-variables
+is_running_on_travis_ci = _is_env_var_defined("TRAVIS")
+is_running_on_github_ci = _is_env_var_defined("GITHUB_ACTIONS")
 
 @pytest.fixture
 def temp_location():
@@ -42,7 +49,13 @@ def test_nonexistent_file_persistence(temp_location):
     is_running_on_travis_ci or not sys.platform.startswith('win'),
     reason="Requires Windows Desktop")
 def test_file_persistence_with_data_protection(temp_location):
-    _test_persistence_roundtrip(FilePersistenceWithDataProtection(temp_location))
+    try:
+        _test_persistence_roundtrip(FilePersistenceWithDataProtection(temp_location))
+    except PersistenceDecryptionError:
+        if is_running_on_github_ci or is_running_on_travis_ci:
+            logging.warning("DPAPI tends to fail on Windows VM. Run this on your desktop to double check.")
+        else:
+            raise
 
 @pytest.mark.skipif(
     is_running_on_travis_ci or not sys.platform.startswith('win'),

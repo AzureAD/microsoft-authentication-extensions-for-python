@@ -1,15 +1,12 @@
 """Generic functions and types for working with a TokenCache that is not platform specific."""
 import os
-import warnings
 import time
 import logging
 
 import msal
 
 from .cache_lock import CrossPlatLock
-from .persistence import (
-    _mkdir_p, PersistenceNotFound, FilePersistence,
-    FilePersistenceWithDataProtection, KeychainPersistence)
+from .persistence import _mkdir_p, PersistenceNotFound
 
 
 logger = logging.getLogger(__name__)
@@ -88,36 +85,4 @@ class PersistedTokenCache(msal.SerializableTokenCache):
             else:  # If reload encountered no error, the data is considered intact
                 return super(PersistedTokenCache, self).find(credential_type, **kwargs)
         return []  # Not really reachable here. Just to keep pylint happy.
-
-
-class FileTokenCache(PersistedTokenCache):
-    """A token cache which uses plain text file to store your tokens."""
-    def __init__(self, cache_location, **ignored):  # pylint: disable=unused-argument
-        warnings.warn("You are using an unprotected token cache", RuntimeWarning)
-        warnings.warn("Use PersistedTokenCache(...) instead", DeprecationWarning)
-        super(FileTokenCache, self).__init__(FilePersistence(cache_location))
-
-UnencryptedTokenCache = FileTokenCache  # For backward compatibility
-
-
-class WindowsTokenCache(PersistedTokenCache):
-    """A token cache which uses Windows DPAPI to encrypt your tokens."""
-    def __init__(
-            self, cache_location, entropy='',
-            **ignored):  # pylint: disable=unused-argument
-        warnings.warn("Use PersistedTokenCache(...) instead", DeprecationWarning)
-        super(WindowsTokenCache, self).__init__(
-            FilePersistenceWithDataProtection(cache_location, entropy=entropy))
-
-
-class OSXTokenCache(PersistedTokenCache):
-    """A token cache which uses native Keychain libraries to encrypt your tokens."""
-    def __init__(self,
-                 cache_location,
-                 service_name='Microsoft.Developer.IdentityService',
-                 account_name='MSALCache',
-                 **ignored):  # pylint: disable=unused-argument
-        warnings.warn("Use PersistedTokenCache(...) instead", DeprecationWarning)
-        super(OSXTokenCache, self).__init__(
-            KeychainPersistence(cache_location, service_name, account_name))
 

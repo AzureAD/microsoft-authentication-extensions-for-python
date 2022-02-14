@@ -1,10 +1,9 @@
 """Provides auxiliary functionality to the `msal` package."""
-__version__ = "0.3.1"
-
-import sys
+__version__ = "1.0.0"
 
 from .persistence import (
     FilePersistence,
+    build_encrypted_persistence,
     FilePersistenceWithDataProtection,
     KeychainPersistence,
     LibsecretPersistence,
@@ -12,9 +11,3 @@ from .persistence import (
 from .cache_lock import CrossPlatLock
 from .token_cache import PersistedTokenCache
 
-if sys.platform.startswith('win'):
-    from .token_cache import WindowsTokenCache as TokenCache
-elif sys.platform.startswith('darwin'):
-    from .token_cache import OSXTokenCache as TokenCache
-else:
-    from .token_cache import FileTokenCache as TokenCache

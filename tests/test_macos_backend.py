@@ -10,7 +10,8 @@ if not sys.platform.startswith('darwin'):
     pytest.skip('skipping MacOS-only tests', allow_module_level=True)
 else:
     from msal_extensions.osx import Keychain
-    from msal_extensions.token_cache import OSXTokenCache
+    from msal_extensions.token_cache import PersistedTokenCache
+    from msal_extensions.persistence import KeychainPersistence
 
 
 def test_keychain_roundtrip():
@@ -26,12 +27,12 @@ def test_osx_token_cache_roundtrip():
     client_id = os.getenv('AZURE_CLIENT_ID')
     client_secret = os.getenv('AZURE_CLIENT_SECRET')
     if not (client_id and client_secret):
-        pytest.skip('no credentials present to test OSXTokenCache round-trip with.')
+        pytest.skip('no credentials present to test PersistedTokenCache round-trip with.')
 
     test_folder = tempfile.mkdtemp(prefix="msal_extension_test_osx_token_cache_roundtrip")
     cache_file = os.path.join(test_folder, 'msal.cache')
     try:
-        subject = OSXTokenCache(cache_location=cache_file)
+        subject = PersistedTokenCache(KeychainPersistence(cache_file))
         app = msal.ConfidentialClientApplication(
             client_id=client_id,
             client_credential=client_secret,

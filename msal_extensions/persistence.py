@@ -9,6 +9,7 @@ app developer would naturally know whether the data are protected by encryption.
 import abc
 import os
 import errno
+import hashlib
 import logging
 import sys
 try:
@@ -50,21 +51,52 @@ def _mkdir_p(path):
         else:
             raise
 
+def _auto_hash(input_string):
+    return hashlib.sha256(input_string.encode('utf-8')).hexdigest()
+
 
 # We do not aim to wrap every os-specific exception.
-# Here we define only the most common one,
-# otherwise caller would need to catch os-specific persistence exceptions.
-class PersistenceNotFound(IOError):  # Use IOError rather than OSError as base,
+# Here we standardize only the most common ones,
+# otherwise caller would need to catch os-specific underlying exceptions.
+class PersistenceError(IOError):  # Use IOError rather than OSError as base,
+    """The base exception for persistence."""
         # because historically an IOError was bubbled up and expected.
         # https://github.com/AzureAD/microsoft-authentication-extensions-for-python/blob/0.2.2/msal_extensions/token_cache.py#L38
         # Now we want to maintain backward compatibility even when using Python 2.x
         # It makes no difference in Python 3.3+ where IOError is an alias of OSError.
+    def __init__(self, err_no=None, message=None, location=None):  # pylint: disable=useless-super-delegation
+        super(PersistenceError, self).__init__(err_no, message, location)
+
+
+class PersistenceNotFound(PersistenceError):
     """This happens when attempting BasePersistence.load() on a non-existent persistence instance"""
     def __init__(self, err_no=None, message=None, location=None):
         super(PersistenceNotFound, self).__init__(
-            err_no or errno.ENOENT,
-            message or "Persistence not found",
-            location)
+            err_no=errno.ENOENT,
+            message=message or "Persistence not found",
+            location=location)
+
+class PersistenceEncryptionError(PersistenceError):
+    """This could be raised by persistence.save()"""
+
+class PersistenceDecryptionError(PersistenceError):
+    """This could be raised by persistence.load()"""
+
+
+def build_encrypted_persistence(location):
+    """Build a suitable encrypted persistence instance based your current OS.
+
+    If you do not need encryption, then simply use ``FilePersistence`` constructor.
+    """
+    # Does not (yet?) support fallback_to_plaintext flag,
+    # because the persistence on Windows and macOS do not support built-in trial_run().
+    if sys.platform.startswith('win'):
+        return FilePersistenceWithDataProtection(location)
+    if sys.platform.startswith('darwin'):
+        return KeychainPersistence(location)
+    if sys.platform.startswith('linux'):
+        return LibsecretPersistence(location)
+    raise RuntimeError("Unsupported platform: {}".format(sys.platform))  # pylint: disable=consider-using-f-string
 
 
 class BasePersistence(ABC):
@@ -101,6 +133,11 @@ class BasePersistence(ABC):
         raise NotImplementedError
 
 
+def _open(location):
+    return os.open(location, os.O_RDWR | os.O_CREAT | os.O_TRUNC, 0o600)
+        # The 600 seems no-op on NTFS/Windows, and that is fine
+
+
 class FilePersistence(BasePersistence):
     """A generic persistence, storing data in a plain-text file"""
 
@@ -113,7 +150,7 @@ class FilePersistence(BasePersistence):
     def save(self, content):
         # type: (str) -> None
         """Save the content into this persistence"""
-        with open(self._location, 'w+') as handle:  # pylint: disable=unspecified-encoding
+        with os.fdopen(_open(self._location), 'w+') as handle:
             handle.write(content)
 
     def load(self):
@@ -168,8 +205,14 @@ class FilePersistenceWithDataProtection(FilePersistence):
 
     def save(self, content):
         # type: (str) -> None
-        data = self._dp_agent.protect(content)
-        with open(self._location, 'wb+') as handle:
+        try:
+            data = self._dp_agent.protect(content)
+        except OSError as exception:
+            raise PersistenceEncryptionError(
+                err_no=getattr(exception, "winerror", None),  # Exists in Python 3 on Windows
+                message="Encryption failed: {}. Consider disable encryption.".format(exception),
+                )
+        with os.fdopen(_open(self._location), 'wb+') as handle:
             handle.write(data)
 
     def load(self):
@@ -177,7 +220,6 @@ class FilePersistenceWithDataProtection(FilePersistence):
         try:
             with open(self._location, 'rb') as handle:
                 data = handle.read()
-            return self._dp_agent.unprotect(data)
         except EnvironmentError as exp:  # EnvironmentError in Py 2.7 works across platform
             if exp.errno == errno.ENOENT:
                 raise PersistenceNotFound(
@@ -190,6 +232,17 @@ class FilePersistenceWithDataProtection(FilePersistence):
                 "DPAPI error likely caused by file content not previously encrypted. "
                 "App developer should migrate by calling save(plaintext) first.")
             raise
+        try:
+            return self._dp_agent.unprotect(data)
+        except OSError as exception:
+            raise PersistenceDecryptionError(
+                err_no=getattr(exception, "winerror", None),  # Exists in Python 3 on Windows
+                message="Decryption failed: {}. "
+                    "App developer may consider this guidance: "
+                    "https://github.com/AzureAD/microsoft-authentication-extensions-for-python/wiki/PersistenceDecryptionError"  # pylint: disable=line-too-long
+                    .format(exception),
+                location=self._location,
+                )
 
 
 class KeychainPersistence(BasePersistence):
@@ -197,19 +250,18 @@ class KeychainPersistence(BasePersistence):
     and protected by native Keychain libraries on OSX"""
     is_encrypted = True
 
-    def __init__(self, signal_location, service_name, account_name):
+    def __init__(self, signal_location, service_name=None, account_name=None):
         """Initialization could fail due to unsatisfied dependency.
 
         :param signal_location: See :func:`persistence.LibsecretPersistence.__init__`
         """
-        if not (service_name and account_name):  # It would hang on OSX
-            raise ValueError("service_name and account_name are required")
         from .osx import Keychain, KeychainError  # pylint: disable=import-outside-toplevel
         self._file_persistence = FilePersistence(signal_location)  # Favor composition
         self._Keychain = Keychain  # pylint: disable=invalid-name
         self._KeychainError = KeychainError  # pylint: disable=invalid-name
-        self._service_name = service_name
-        self._account_name = account_name
+        default_service_name = "msal-extensions"  # This is also our package name
+        self._service_name = service_name or default_service_name
+        self._account_name = account_name or _auto_hash(signal_location)
 
     def save(self, content):
         with self._Keychain() as locker:
@@ -247,7 +299,7 @@ class LibsecretPersistence(BasePersistence):
     and protected by native libsecret libraries on Linux"""
     is_encrypted = True
 
-    def __init__(self, signal_location, schema_name, attributes, **kwargs):
+    def __init__(self, signal_location, schema_name=None, attributes=None, **kwargs):
         """Initialization could fail due to unsatisfied dependency.
 
         :param string signal_location:
@@ -262,7 +314,8 @@ class LibsecretPersistence(BasePersistence):
         from .libsecret import (  # This uncertain import is deferred till runtime
             LibSecretAgent, trial_run)
         trial_run()
-        self._agent = LibSecretAgent(schema_name, attributes, **kwargs)
+        self._agent = LibSecretAgent(
+            schema_name or _auto_hash(signal_location), attributes or {}, **kwargs)
         self._file_persistence = FilePersistence(signal_location)  # Favor composition
 
     def save(self, content):

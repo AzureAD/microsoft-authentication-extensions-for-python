@@ -210,7 +210,7 @@ class FilePersistenceWithDataProtection(FilePersistence):
         except OSError as exception:
             raise PersistenceEncryptionError(
                 err_no=getattr(exception, "winerror", None),  # Exists in Python 3 on Windows
-                message="Encryption failed: {}. Consider disable encryption.".format(exception),
+                message="Encryption failed: {} Consider disable encryption.".format(exception),
                 )
         with os.fdopen(_open(self._location), 'wb+') as handle:
             handle.write(data)
@@ -237,7 +237,7 @@ class FilePersistenceWithDataProtection(FilePersistence):
         except OSError as exception:
             raise PersistenceDecryptionError(
                 err_no=getattr(exception, "winerror", None),  # Exists in Python 3 on Windows
-                message="Decryption failed: {}. "
+                message="Decryption failed: {} "
                     "App developer may consider this guidance: "
                     "https://github.com/AzureAD/microsoft-authentication-extensions-for-python/wiki/PersistenceDecryptionError"  # pylint: disable=line-too-long
                     .format(exception),
@@ -342,4 +342,3 @@ class LibsecretPersistence(BasePersistence):
 # with a FilePersistence to achieve
 #  https://github.com/AzureAD/microsoft-authentication-extensions-for-python/issues/12
 # But this idea is not pursued at this time.
-

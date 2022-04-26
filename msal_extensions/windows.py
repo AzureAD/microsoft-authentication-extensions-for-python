@@ -46,7 +46,7 @@ _err_description = {
         "The computer must be trusted for delegation and "
         "the current user account must be configured to allow delegation. "
         "See also https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/enable-computer-and-user-accounts-to-be-trusted-for-delegation",
-    13: "The data is invalid",
+    13: "The data is invalid.",
     }
 
 # This code is modeled from a StackOverflow question, which can be found here:
@@ -91,7 +91,7 @@ class WindowsDataProtectionAgent(object):
                 _LOCAL_FREE(result.pbData)
 
         err_code = _GET_LAST_ERROR()
-        raise OSError(None, _err_description.get(err_code), None, err_code)
+        raise OSError(None, _err_description.get(err_code, ''), None, err_code)
 
     def unprotect(self, cipher_text):
         # type: (bytes) -> str
@@ -120,4 +120,4 @@ class WindowsDataProtectionAgent(object):
             finally:
                 _LOCAL_FREE(result.pbData)
         err_code = _GET_LAST_ERROR()
-        raise OSError(None, _err_description.get(err_code), None, err_code)
+        raise OSError(None, _err_description.get(err_code, ''), None, err_code)

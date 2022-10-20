@@ -22,7 +22,12 @@ setup(
     package_data={'': ['LICENSE']},
     install_requires=[
         'msal>=0.4.1,<2.0.0',
-
+        "pathlib2;python_version<'3.0'",
+        ## We choose to NOT define a hard dependency on this.
+        # "pygobject>=3,<4;platform_system=='Linux'",
+    ],
+    extras_require={
+        "portalocker": [
         # In order to implement these requirements:
         #       Lowerbound = (1.6 if playform_system == 'Windows' else 1.0)
         #       Upperbound < (3 if python_version >= '3.5' else 2)
@@ -32,10 +37,7 @@ setup(
         "portalocker<2,>=1.0;python_version=='2.7' and platform_system!='Windows'",
         "portalocker<3,>=1.6;python_version>='3.5' and platform_system=='Windows'",
         "portalocker<2,>=1.6;python_version=='2.7' and platform_system=='Windows'",
-
-        "pathlib2;python_version<'3.0'",
-        ## We choose to NOT define a hard dependency on this.
-        # "pygobject>=3,<4;platform_system=='Linux'",
-    ],
+        ],
+    },
     tests_require=['pytest'],
 )

@@ -6,10 +6,13 @@ import time
 import logging
 from distutils.version import LooseVersion
 
-import portalocker
+import portalocker  # pylint: disable=import-error
 
 
 logger = logging.getLogger(__name__)
+
+
+LockError = portalocker.exceptions.LockException
 
 
 class CrossPlatLock(object):

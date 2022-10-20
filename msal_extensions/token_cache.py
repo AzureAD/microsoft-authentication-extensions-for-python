@@ -5,7 +5,10 @@ import logging
 
 import msal
 
-from .cache_lock import CrossPlatLock
+try:
+    from .cache_lock import CrossPlatLock  # It needs portalocker
+except ImportError:
+    from .filelock import CrossPlatLock
 from .persistence import _mkdir_p, PersistenceNotFound
 
 

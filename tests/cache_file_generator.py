@@ -14,9 +14,10 @@ import os
 import sys
 import time
 
-from portalocker import exceptions
+from msal_extensions import FilePersistence, CrossPlatLock, LockError
 
-from msal_extensions import FilePersistence, CrossPlatLock
+
+print("Testing with {}".format(CrossPlatLock))
 
 
 def _acquire_lock_and_write_to_cache(cache_location, sleep_interval):
@@ -31,7 +32,7 @@ def _acquire_lock_and_write_to_cache(cache_location, sleep_interval):
             time.sleep(sleep_interval)
             data += "> " + str(os.getpid()) + "\n"
             cache_accessor.save(data)
-    except exceptions.LockException as e:
+    except LockError as e:
         logging.warning("Unable to acquire lock %s", e)
 
 

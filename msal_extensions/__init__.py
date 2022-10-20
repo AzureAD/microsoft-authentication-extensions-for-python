@@ -8,6 +8,9 @@ from .persistence import (
     KeychainPersistence,
     LibsecretPersistence,
     )
-from .cache_lock import CrossPlatLock
+try:
+    from .cache_lock import CrossPlatLock, LockError  # It needs portalocker
+except ImportError:
+    from .filelock import CrossPlatLock, LockError
 from .token_cache import PersistedTokenCache
 

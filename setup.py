@@ -20,10 +20,14 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         'msal>=1.29,<2',  # Use TokenCache.search() from MSAL Python 1.29+
-        'portalocker<4,>=1.4',
 
         ## We choose to NOT define a hard dependency on this.
         # "pygobject>=3,<4;platform_system=='Linux'",
     ],
+    extras_require={
+        "portalocker": [
+            'portalocker<4,>=1.4',
+        ],
+    },
     tests_require=['pytest'],
 )

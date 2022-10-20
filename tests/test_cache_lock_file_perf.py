@@ -5,7 +5,7 @@ import tempfile
 
 import pytest
 
-from cache_file_generator import _acquire_lock_and_write_to_cache
+from .cache_file_generator import _acquire_lock_and_write_to_cache
 
 
 @pytest.fixture

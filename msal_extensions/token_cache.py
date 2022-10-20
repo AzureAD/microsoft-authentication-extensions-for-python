@@ -5,7 +5,13 @@ import logging
 
 import msal
 
-from .cache_lock import CrossPlatLock
+try:  # It needs portalocker
+    from .cache_lock import (  # pylint: disable=unused-import
+        CrossPlatLock,
+        LockError,  # We don't use LockError in this file, but __init__.py uses it.
+        )
+except ImportError:  # Falls back to file-based lock
+    from .filelock import CrossPlatLock, LockError  # pylint: disable=unused-import
 from .persistence import _mkdir_p, PersistenceNotFound
 
 

@@ -8,6 +8,5 @@ from .persistence import (
     KeychainPersistence,
     LibsecretPersistence,
     )
-from .cache_lock import CrossPlatLock
-from .token_cache import PersistedTokenCache
+from .token_cache import PersistedTokenCache, CrossPlatLock, LockError
 

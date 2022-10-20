@@ -1,5 +1,5 @@
 import pytest
-from msal_extensions.cache_lock import CrossPlatLock
+from msal_extensions import CrossPlatLock
 
 
 def test_ensure_file_deleted():
@@ -10,6 +10,7 @@ def test_ensure_file_deleted():
     except NameError:
         FileNotFoundError = IOError
 
+    print("Testing with {}".format(CrossPlatLock))
     with CrossPlatLock(lockfile):
         pass
 

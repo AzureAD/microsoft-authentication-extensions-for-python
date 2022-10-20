@@ -1,12 +1,15 @@
+import json
 import os
 import shutil
 import tempfile
+from unittest.mock import patch
 import sys
 
 import msal
 import pytest
 
 from msal_extensions import *
+from .http_client import MinimalResponse
 
 
 @pytest.fixture
@@ -16,18 +19,19 @@ def temp_location():
     shutil.rmtree(test_folder, ignore_errors=True)
 
 def _test_token_cache_roundtrip(persistence):
-    client_id = os.getenv('AZURE_CLIENT_ID')
-    client_secret = os.getenv('AZURE_CLIENT_SECRET')
-    if not (client_id and client_secret):
-        pytest.skip('no credentials present to test TokenCache round-trip with.')
-
     desired_scopes = ['https://graph.microsoft.com/.default']
     apps = [  # Multiple apps sharing same persistence
         msal.ConfidentialClientApplication(
-        client_id, client_credential=client_secret,
+        "fake_client_id", client_credential="fake_client_secret",
         token_cache=PersistedTokenCache(persistence)) for i in range(2)]
-    token1 = apps[0].acquire_token_for_client(scopes=desired_scopes)
-    assert token1["token_source"] == "identity_provider", "Initial token should come from IdP"
+    with patch.object(apps[0].http_client, "post", return_value=MinimalResponse(
+        status_code=200, text=json.dumps({
+            "token_type": "Bearer",
+            "access_token": "app token",
+            "expires_in": 3600,
+    }))) as mocked_post:
+        token1 = apps[0].acquire_token_for_client(scopes=desired_scopes)
+        assert token1["token_source"] == "identity_provider", "Initial token should come from IdP"
     token2 = apps[1].acquire_token_for_client(scopes=desired_scopes)  # Hit token cache in MSAL 1.23+
     assert token2["token_source"] == "cache", "App2 should hit cache written by app1"
     assert token1['access_token'] == token2['access_token'], "Cache should hit"

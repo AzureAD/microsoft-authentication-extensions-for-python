@@ -1,6 +1,7 @@
 # TODO: Can this Dockerfile use multi-stage build?
+# https://testdriven.io/tips/6da2d9c9-8849-4386-b7f9-13b28514ded8/
 # Final size 690MB. (It would be 1.16 GB if started with python:3 as base)
-FROM python:3.12-slim
+FROM python:3.13-slim
 
 # Install Generic PyGObject (sans GTK)
 #The following somehow won't work:
@@ -9,7 +10,6 @@ RUN apt-get update && apt-get install -y \
   libcairo2-dev \
   libgirepository1.0-dev \
   python3-dev
-RUN pip install "pygobject>=3,<4"
 
 # Install MSAL Extensions dependencies
 # Don't know how to get container talk to dbus on host,
@@ -19,10 +19,10 @@ RUN apt-get install -y \
   gnome-keyring
 
 # Not strictly necessary, but we include a pytest (which is only 3MB) to facilitate testing.
-RUN pip install "pytest>=6,<7"
+RUN pip install "pygobject>=3,<4" "pytest>=6,<7"
 
 # Install MSAL Extensions. Upgrade the pinned version number to trigger a new image build.
-RUN pip install "msal-extensions==1.1"
+RUN pip install "msal-extensions==1.2"
 
 # This setup is inspired from https://github.com/jaraco/keyring#using-keyring-on-headless-linux-systems-in-a-docker-container
 ENTRYPOINT ["dbus-run-session", "--"]

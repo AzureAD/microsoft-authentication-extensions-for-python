@@ -40,9 +40,7 @@ except (ValueError, ImportError) as ex:
 class LibSecretAgent(object):
     """A loader/saver built on top of low-level libsecret"""
     # Inspired by https://developer.gnome.org/libsecret/unstable/py-examples.html
-    def __init__(
-            # pylint: disable=too-many-arguments
-            # pylint: disable=too-many-positional-arguments
+    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
             self,
             schema_name,
             attributes,  # {"name": "value", ...}

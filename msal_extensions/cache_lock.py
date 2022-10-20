@@ -5,10 +5,13 @@ import errno
 import time
 import logging
 
-import portalocker
+import portalocker  # pylint: disable=import-error
 
 
 logger = logging.getLogger(__name__)
+
+
+LockError = portalocker.exceptions.LockException
 
 
 class CrossPlatLock(object):

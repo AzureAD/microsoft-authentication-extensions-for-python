@@ -252,6 +252,7 @@ class Keychain(object):
             kSecAttrService=service,
             kSecAttrAccount=account_name,
             kSecReturnData=_ctypes.c_void_p.in_dll(_SECURITY, "kCFBooleanTrue"),
+            kSecUseDataProtectionKeychain="True",
         )
 
         data = _ctypes.c_void_p()
@@ -279,6 +280,7 @@ class Keychain(object):
             kSecMatchLimit=_ctypes.c_void_p.in_dll(_SECURITY, "kSecMatchLimit"),
             kSecAttrService=service,
             kSecAttrAccount=account_name,
+            kSecUseDataProtectionKeychain="True",
         )
 
         find_exit_status = SecItemCopyMatching(queryUser, None)

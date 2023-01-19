@@ -56,7 +56,7 @@ _CORE_RELEASE.argtypes = (_ctypes.c_void_p,)
 # https://developer.apple.com/documentation/security/1394686-seccopyerrormessagestring?language=objc
 _SECURITY_COPY_ERROR_MESSAGE_STRING = _SECURITY.SecCopyErrorMessageString
 _SECURITY_COPY_ERROR_MESSAGE_STRING.argtypes = (OS_RESULT, _ctypes.c_void_p)
-_SECURITY_COPY_ERROR_MESSAGE_STRING.restype = _ctypes.c_char_p
+_SECURITY_COPY_ERROR_MESSAGE_STRING.restype = CFStringRef
 
 # Bind SecKeychainOpen from native MacOS libraries.
 # https://developer.apple.com/documentation/security/1396431-seckeychainopen

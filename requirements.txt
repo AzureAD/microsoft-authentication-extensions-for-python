@@ -1,0 +1,7 @@
+## Github actions/setup-python might need a requirements.txt to cache dependencies
+# https://github.com/actions/setup-python?tab=readme-ov-file#caching-packages-dependencies
+pygobject; sys_platform == 'linux'
+pylint
+tox
+pytest
+-e .

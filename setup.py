@@ -36,6 +36,8 @@ setup(
         "pathlib2;python_version<'3.0'",
         ## We choose to NOT define a hard dependency on this.
         # "pygobject>=3,<4;platform_system=='Linux'",
+
+        'packaging',
     ],
     tests_require=['pytest'],
 )

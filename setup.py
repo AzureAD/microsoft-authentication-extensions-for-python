@@ -37,6 +37,9 @@ setup(
         ## We choose to NOT define a hard dependency on this.
         # "pygobject>=3,<4;platform_system=='Linux'",
 
+        # Packaging package uses YY.N versioning so we have no upperbound to pin.
+        # Neither do we need lowerbound because its `Version` API existed since its first release
+        # https://github.com/pypa/packaging/blame/14.0/packaging/version.py
         'packaging',
     ],
     tests_require=['pytest'],

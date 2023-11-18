@@ -89,6 +89,12 @@ persistence.save(json.dumps(data))
 assert json.loads(persistence.load()) == data
 ```
 
+## Python version support policy
+
+Python versions which are 6 months older than their
+[end-of-life cycle defined by Python Software Foundation (PSF)](https://devguide.python.org/versions/#versions)
+will not receive new feature updates from this library.
+
 
 ## Community Help and Support
 

@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.7, 3.8, 3.9]
+        python-version: [3.7, 3.8, 3.9, "3.10", 3.11, 3.12]
         os: [ubuntu-latest, windows-latest, macos-latest]
         include:
           # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#using-environment-variables-in-a-matrix
@@ -27,13 +27,19 @@ jobs:
             toxenv: "py38"
           - python-version: 3.9
             toxenv: "py39"
+          - python-version: "3.10"
+            toxenv: "py310"
+          - python-version: 3.11
+            toxenv: "py311"
+          - python-version: 3.12
+            toxenv: "py312"
           - python-version: 3.9
             os: ubuntu-latest
             lint: "true"
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install Linux dependencies for Python 2
@@ -83,9 +89,9 @@ jobs:
     if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags') || github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Set up Python 3.9
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: 3.9
     - name: Build a package for release

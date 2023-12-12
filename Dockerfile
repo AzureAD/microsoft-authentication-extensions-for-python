@@ -1,6 +1,6 @@
 # TODO: Can this Dockerfile use multi-stage build?
 # Final size 690MB. (It would be 1.16 GB if started with python:3 as base)
-FROM python:3-slim
+FROM python:3.12-slim
 
 # Install Generic PyGObject (sans GTK)
 #The following somehow won't work:
@@ -22,7 +22,7 @@ RUN apt-get install -y \
 RUN pip install "pytest>=6,<7"
 
 # Install MSAL Extensions. Upgrade the pinned version number to trigger a new image build.
-RUN pip install "msal-extensions==0.3"
+RUN pip install "msal-extensions==1.1"
 
 # This setup is inspired from https://github.com/jaraco/keyring#using-keyring-on-headless-linux-systems-in-a-docker-container
 ENTRYPOINT ["dbus-run-session", "--"]

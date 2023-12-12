@@ -4,9 +4,9 @@ import sys
 import errno
 import time
 import logging
-from distutils.version import LooseVersion
 
 import portalocker
+from packaging.version import Version
 
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ class CrossPlatLock(object):
         self._lockpath = lockfile_path
         # Support for passing through arguments to the open syscall was added in v1.4.0
         open_kwargs = ({'buffering': 0}
-            if LooseVersion(portalocker.__version__) >= LooseVersion("1.4.0") else {})
+            if Version(portalocker.__version__) >= Version("1.4.0") else {})
         self._lock = portalocker.Lock(
             lockfile_path,
             mode='wb+',

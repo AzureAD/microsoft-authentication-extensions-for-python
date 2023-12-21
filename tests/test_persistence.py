@@ -19,7 +19,6 @@ def _is_env_var_defined(env_var):
 
 # Note: If you use tox, remember to pass them through via tox.ini
 # https://tox.wiki/en/latest/example/basic.html#passing-down-environment-variables
-is_running_on_travis_ci = _is_env_var_defined("TRAVIS")
 is_running_on_github_ci = _is_env_var_defined("GITHUB_ACTIONS")
 
 @pytest.fixture
@@ -46,45 +45,45 @@ def test_nonexistent_file_persistence(temp_location):
     _test_nonexistent_persistence(FilePersistence(temp_location))
 
 @pytest.mark.skipif(
-    is_running_on_travis_ci or not sys.platform.startswith('win'),
+    not sys.platform.startswith('win'),
     reason="Requires Windows Desktop")
 def test_file_persistence_with_data_protection(temp_location):
     try:
         _test_persistence_roundtrip(FilePersistenceWithDataProtection(temp_location))
     except PersistenceDecryptionError:
-        if is_running_on_github_ci or is_running_on_travis_ci:
+        if is_running_on_github_ci:
             logging.warning("DPAPI tends to fail on Windows VM. Run this on your desktop to double check.")
         else:
             raise
 
 @pytest.mark.skipif(
-    is_running_on_travis_ci or not sys.platform.startswith('win'),
+    not sys.platform.startswith('win'),
     reason="Requires Windows Desktop")
 def test_nonexistent_file_persistence_with_data_protection(temp_location):
     _test_nonexistent_persistence(FilePersistenceWithDataProtection(temp_location))
 
 @pytest.mark.skipif(
     not sys.platform.startswith('darwin'),
-    reason="Requires OSX. Whether running on TRAVIS CI does not seem to matter.")
+    reason="Requires OSX.")
 def test_keychain_persistence(temp_location):
     _test_persistence_roundtrip(KeychainPersistence(temp_location))
 
 @pytest.mark.skipif(
     not sys.platform.startswith('darwin'),
-    reason="Requires OSX. Whether running on TRAVIS CI does not seem to matter.")
+    reason="Requires OSX.")
 def test_nonexistent_keychain_persistence(temp_location):
     random_service_name = random_account_name = str(id(temp_location))
     _test_nonexistent_persistence(
         KeychainPersistence(temp_location, random_service_name, random_account_name))
 
 @pytest.mark.skipif(
-    is_running_on_travis_ci or not sys.platform.startswith('linux'),
+    not sys.platform.startswith('linux'),
     reason="Requires Linux Desktop. Headless or SSH session won't work.")
 def test_libsecret_persistence(temp_location):
     _test_persistence_roundtrip(LibsecretPersistence(temp_location))
 
 @pytest.mark.skipif(
-    is_running_on_travis_ci or not sys.platform.startswith('linux'),
+    not sys.platform.startswith('linux'),
     reason="Requires Linux Desktop. Headless or SSH session won't work.")
 def test_nonexistent_libsecret_persistence(temp_location):
     random_schema_name = random_value = str(id(temp_location))

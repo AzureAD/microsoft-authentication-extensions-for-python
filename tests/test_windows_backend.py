@@ -38,7 +38,7 @@ def test_dpapi_roundtrip_with_entropy():
         assert ciphered != tc
 
         got = subject_without_entropy.unprotect(ciphered)
-        assert got == tcs
+        assert got == tc
 
 
 def test_read_msal_cache_direct():

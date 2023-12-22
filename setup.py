@@ -8,10 +8,7 @@ __version__ = re.search(
     io.open('msal_extensions/__init__.py', encoding='utf_8_sig').read()
     ).group(1)
 
-try:
-    long_description = open('README.md').read()
-except OSError:
-    long_description = "README.md is not accessible on TRAVIS CI's Python 3.5"
+long_description = open('README.md').read()
 
 setup(
     name='msal-extensions',

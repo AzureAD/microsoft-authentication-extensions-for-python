@@ -6,7 +6,6 @@ import time
 import logging
 
 import portalocker
-from packaging.version import Version
 
 
 logger = logging.getLogger(__name__)
@@ -19,9 +18,6 @@ class CrossPlatLock(object):
     """
     def __init__(self, lockfile_path):
         self._lockpath = lockfile_path
-        # Support for passing through arguments to the open syscall was added in v1.4.0
-        open_kwargs = ({'buffering': 0}
-            if Version(portalocker.__version__) >= Version("1.4.0") else {})
         self._lock = portalocker.Lock(
             lockfile_path,
             mode='wb+',
@@ -30,7 +26,10 @@ class CrossPlatLock(object):
             # More information here:
             # https://docs.python.org/3/library/fcntl.html#fcntl.lockf
             flags=portalocker.LOCK_EX | portalocker.LOCK_NB,
-            **open_kwargs)
+            # Support for passing through arguments to the open syscall
+            # was added in Portalocker v1.4.0 (2019-02-11).
+            buffering=0,
+        )
 
     def _try_to_create_lock_file(self):
         timeout = 5

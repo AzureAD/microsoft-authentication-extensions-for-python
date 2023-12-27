@@ -20,17 +20,10 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         'msal>=0.4.1,<2.0.0',
-
-        "portalocker<3,>=1.0;platform_system!='Windows'",
-        "portalocker<3,>=1.6;platform_system=='Windows'",
+        'portalocker<3,>=1.4',
 
         ## We choose to NOT define a hard dependency on this.
         # "pygobject>=3,<4;platform_system=='Linux'",
-
-        # Packaging package uses YY.N versioning so we have no upperbound to pin.
-        # Neither do we need lowerbound because its `Version` API existed since its first release
-        # https://github.com/pypa/packaging/blame/14.0/packaging/version.py
-        'packaging',
     ],
     tests_require=['pytest'],
 )

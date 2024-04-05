@@ -93,6 +93,7 @@ def test_windows_token_cache_roundtrip():
             token_cache=subject)
         desired_scopes = ['https://graph.microsoft.com/.default']
         token1 = app.acquire_token_for_client(scopes=desired_scopes)
+        # TODO: Modify this to same approach in test_agnostic_backend.py
         os.utime(cache_file, None)  # Mock having another process update the cache.
         token2 = app.acquire_token_silent(scopes=desired_scopes, account=None)
         assert token1['access_token'] == token2['access_token']

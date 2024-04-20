@@ -69,7 +69,7 @@ class PersistedTokenCache(msal.SerializableTokenCache):
             self._persistence.save(self.serialize())
             self._last_sync = time.time()
 
-    def _find(self, credential_type, **kwargs):  # pylint: disable=arguments-differ
+    def search(self, credential_type, **kwargs):  # pylint: disable=arguments-differ
         # Use optimistic locking rather than CrossPlatLock(self._lock_location)
         retry = 3
         for attempt in range(1, retry + 1):
@@ -83,6 +83,6 @@ class PersistedTokenCache(msal.SerializableTokenCache):
                 else:
                     raise  # End of retry. Re-raise the exception as-is.
             else:  # If reload encountered no error, the data is considered intact
-                return super(PersistedTokenCache, self)._find(credential_type, **kwargs)
+                return super(PersistedTokenCache, self).search(credential_type, **kwargs)
         return []  # Not really reachable here. Just to keep pylint happy.
 

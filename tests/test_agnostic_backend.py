@@ -32,7 +32,7 @@ def _test_token_cache_roundtrip(persistence):
     assert token2["token_source"] == "cache", "App2 should hit cache written by app1"
     assert token1['access_token'] == token2['access_token'], "Cache should hit"
 
-def test_token_cache_roundtrip_with_persistence_biulder(temp_location):
+def test_token_cache_roundtrip_with_persistence_builder(temp_location):
     _test_token_cache_roundtrip(build_encrypted_persistence(temp_location))
 
 def test_token_cache_roundtrip_with_file_persistence(temp_location):

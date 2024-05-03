@@ -19,10 +19,15 @@ jobs:
       matrix:
         python-version: [3.7, 3.8, 3.9, "3.10", 3.11, 3.12]
         os: [ubuntu-latest, windows-latest, macos-latest]
-        include:
-          # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#using-environment-variables-in-a-matrix
-          - python-version: 3.7
+        exclude:  # https://github.com/actions/runner-images/issues/9770#issuecomment-2085623315
+          # Apple Silicon ARM64 does not support Python < v3.8
+          - python-version: "3.7"
+            os: macos-latest
+        include:  # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#using-environment-variables-in-a-matrix
+          - # Run those legacy versions on macos13 runner which uses Intel CPUs
+            python-version: 3.7
             toxenv: "py37"
+            os: macos-13
           - python-version: 3.8
             toxenv: "py38"
           - python-version: 3.9

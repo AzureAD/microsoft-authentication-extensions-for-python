@@ -19,7 +19,7 @@ setup(
     package_data={'': ['LICENSE']},
     python_requires=">=3.7",
     install_requires=[
-        'msal>=1.27,<1.29',  # MSAL Python 1.29+ may not have TokenCache._find()
+        'msal>=1.29,<2',  # Use TokenCache.search() from MSAL Python 1.29+
         'portalocker<3,>=1.4',
 
         ## We choose to NOT define a hard dependency on this.

@@ -1,5 +1,5 @@
 """Provides auxiliary functionality to the `msal` package."""
-__version__ = "1.2.0b1"  # Note: During/after release, copy this number to Dockerfile
+__version__ = "1.2.0"  # Note: During/after release, copy this number to Dockerfile
 
 from .persistence import (
     FilePersistence,

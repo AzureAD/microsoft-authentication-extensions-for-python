@@ -17,7 +17,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     package_data={'': ['LICENSE']},
-    python_requires=">=3.7",
+    python_requires=">=3.9",
     install_requires=[
         'msal>=1.29,<2',  # Use TokenCache.search() from MSAL Python 1.29+
 

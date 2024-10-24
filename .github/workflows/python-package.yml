@@ -17,22 +17,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.7, 3.8, 3.9, "3.10", 3.11, 3.12]
+        python-version: [3.9, "3.10", 3.11, 3.12, "3.13"]
         os: [ubuntu-latest, windows-latest, macos-latest]
-        exclude:  # https://github.com/actions/runner-images/issues/9770#issuecomment-2085623315
-          # ubuntu-latest dropped Python 3.7 since late 2024
-          - python-version: "3.7"
-            os: ubuntu-latest
-          # Apple Silicon ARM64 does not support Python < v3.8
-          - python-version: "3.7"
-            os: macos-latest
         include:  # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#using-environment-variables-in-a-matrix
-          - # Run those legacy versions on macos13 runner which uses Intel CPUs
-            python-version: 3.7
-            toxenv: "py37"
-            os: macos-13
-          - python-version: 3.8
-            toxenv: "py38"
           - python-version: 3.9
             toxenv: "py39"
           - python-version: "3.10"
@@ -41,6 +28,8 @@ jobs:
             toxenv: "py311"
           - python-version: 3.12
             toxenv: "py312"
+          - python-version: "3.13"
+            toxenv: "py313"
           - python-version: 3.9
             os: ubuntu-latest
             lint: "true"
@@ -51,13 +40,8 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'pip'
-    - name: Install Linux dependencies for Python 2
-      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == '2.7' }}
-      run: |
-        sudo apt update
-        sudo apt install python-dev libgirepository1.0-dev libcairo2-dev gir1.2-secret-1 gnome-keyring
     - name: Install Linux dependencies for Python 3
-      if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version != '2.7' }}
+      if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
         sudo apt update
         # girepository-2.0 becomes necessary since PyGobject 3.51 https://pygobject.gnome.org/changelog.html#pre-release

@@ -60,7 +60,12 @@ jobs:
       if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version != '2.7' }}
       run: |
         sudo apt update
-        sudo apt install python3-dev libgirepository1.0-dev libcairo2-dev gir1.2-secret-1 gnome-keyring
+        # girepository-2.0 becomes necessary since PyGobject 3.51 https://pygobject.gnome.org/changelog.html#pre-release
+        sudo apt install -y python3-dev libgirepository-2.0-dev libcairo2-dev gir1.2-secret-1 gnome-keyring
+        # The line above is different than the PyGObject install instructions:
+        #   https://pygobject.gnome.org/getting_started.html#ubuntu-logo-ubuntu-debian-logo-debian
+        # because we chose to specify the exact dependencies (secret and keyring)
+        # rather than using the much larger gtk.
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip

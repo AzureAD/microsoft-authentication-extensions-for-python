@@ -2,7 +2,7 @@ import sys
 import logging
 import json
 
-from msal_extensions import build_encrypted_persistence, FilePersistence
+from msal_extensions import build_encrypted_persistence, FilePersistence, PersistedTokenCache
 
 
 def build_persistence(location, fallback_to_plaintext=False):

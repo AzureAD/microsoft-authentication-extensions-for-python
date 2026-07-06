@@ -37,7 +37,6 @@ class CrossPlatLock(object):
             # With LOCK_NB, all but one of 300 concurrent processes would raise LockError
             # immediately instead of waiting, bypassing the critical section entirely.
             flags=portalocker.LOCK_EX,
-            buffering=0,
         )
 
     def __enter__(self):

@@ -150,8 +150,20 @@ class FilePersistence(BasePersistence):
     def save(self, content):
         # type: (str) -> None
         """Save the content into this persistence"""
-        with os.fdopen(_open(self._location), 'w+') as handle:
-            handle.write(content)
+        # Use a per-process unique temp file to avoid the shared-tmp race: if two processes
+        # (which both bypassed the lock) write to the same .tmp path concurrently, the shorter
+        # write leaves leftover bytes from the longer write, corrupting the JSON with "Extra data".
+        tmp = "{}.tmp.{}.{}".format(self._location, os.getpid(), os.urandom(4).hex())
+        try:
+            with os.fdopen(os.open(tmp, os.O_RDWR | os.O_CREAT | os.O_TRUNC, 0o600), 'w+') as handle:
+                handle.write(content)
+            os.replace(tmp, self._location)
+        except Exception:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
 
     def load(self):
         # type: () -> str

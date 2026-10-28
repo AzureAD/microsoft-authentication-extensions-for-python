@@ -134,12 +134,23 @@ class BasePersistence(ABC):
 
 
 def _open(location):
-    return os.open(location, os.O_RDWR | os.O_CREAT | os.O_TRUNC, 0o600)
-        # The 600 seems no-op on NTFS/Windows, and that is fine
+    descriptor = os.open(location, os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        if os.name == "posix":
+            # Creation mode does not restrict an existing file, such as a legacy marker.
+            os.fchmod(descriptor, 0o600)
+        os.ftruncate(descriptor, 0)
+    except OSError:
+        os.close(descriptor)
+        raise
+    return descriptor
 
 
 class FilePersistence(BasePersistence):
-    """A generic persistence, storing data in a plain-text file"""
+    """A generic persistence, storing data in a plain-text file.
+
+    On POSIX, saving restricts the file permissions to owner read/write.
+    """
 
     def __init__(self, location):
         if not location:
@@ -185,7 +196,7 @@ class FilePersistence(BasePersistence):
 
     def touch(self):
         """To touch this file-based persistence without writing content into it"""
-        Path(self._location).touch()  # For os.path.getmtime() to work
+        Path(self._location).touch(mode=0o600)  # For os.path.getmtime() to work
 
     def get_location(self):
         return self._location

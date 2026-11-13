@@ -4,6 +4,8 @@ import shutil
 import tempfile
 from unittest.mock import patch
 import sys
+import runpy
+import stat
 
 import msal
 import pytest
@@ -47,3 +49,30 @@ def test_file_not_found_error_is_not_raised():
     cache = PersistedTokenCache(persistence)
     # An exception raised here will fail the test case as it is supposed to be a NO-OP
     cache.find('')
+
+@pytest.mark.skipif(os.name != "posix", reason="Requires POSIX file permissions")
+def test_sample_plaintext_fallback_with_existing_marker(temp_location):
+    marker = FilePersistence(temp_location)
+    marker.touch()
+    os.chmod(temp_location, 0o644)  # A marker left by an older native-store persistence.
+    sample = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "sample", "token_cache_sample.py")
+    with patch("msal_extensions.build_encrypted_persistence", return_value=marker) as builder:
+        build_persistence = runpy.run_path(sample)["build_persistence"]
+        builder.side_effect = RuntimeError("Native store unavailable")
+        with pytest.raises(RuntimeError, match="Native store unavailable"):
+            build_persistence(temp_location)
+        persistence = build_persistence(temp_location, fallback_to_plaintext=True)
+
+    cache = PersistedTokenCache(persistence)
+    cache.add({
+        "client_id": "test-client",
+        "scope": ["test-scope"],
+        "token_endpoint": "https://login.microsoftonline.com/test-tenant/oauth2/v2.0/token",
+        "response": {"refresh_token": "synthetic-refresh-token"},
+    })
+
+    assert not cache.is_encrypted
+    tokens = json.loads(persistence.load())["RefreshToken"].values()
+    assert any(token["secret"] == "synthetic-refresh-token" for token in tokens)
+    assert stat.S_IMODE(os.stat(temp_location).st_mode) == 0o600

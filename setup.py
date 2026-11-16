@@ -26,7 +26,7 @@ setup(
     ],
     extras_require={
         "portalocker": [
-            'portalocker<4,>=1.4',
+            'portalocker<5,>=1.4',
         ],
     },
     tests_require=['pytest'],
